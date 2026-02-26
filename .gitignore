@@ -14,9 +14,12 @@ Thumbs.db
 *.log
 
 # Data lake — raw binary files are not tracked
-data_lake/raw/
-# Exception: keep the manifest in version control
+data_lake/raw/**
+# Exceptions: keep the manifest and directory placeholder in version control
+!data_lake/raw/.gitkeep
 !data_lake/raw/**/manifest.json
 
 # Curated Parquet files (usually too large to commit)
-data_lake/curated/
+data_lake/curated/**
+# Exception: keep directory placeholder in version control
+!data_lake/curated/.gitkeep
