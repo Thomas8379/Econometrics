@@ -1,0 +1,14 @@
+# Claude Code local settings
+.claude/
+
+# Stata temporary files
+*.stswp
+*.ster
+*.smcl
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
