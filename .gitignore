@@ -1,5 +1,16 @@
 # Claude Code local settings
-.claude/
+.claude/settings.local.json
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Stata temporary files
 *.stswp

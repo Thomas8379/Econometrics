@@ -1,0 +1,690 @@
+# econtools — Master Capability Inventory
+
+> **Purpose:** Ground-truth reference for what we plan to implement, what library provides it,
+> what the underlying call is, and what the output object exposes. Use this to drive module
+> design and test-case writing.
+>
+> **Libraries:** `statsmodels` (sm), `linearmodels` (lm), `scipy.stats` (sp), `pandas` (pd), `pyarrow` (pa), custom (custom)
+
+---
+
+## 0. Format rationale — why Parquet as canonical
+
+**Short answer: Parquet is correct for this use case.** The relevant choice is between Parquet and Feather (Arrow IPC):
+
+| Concern | Parquet | Feather v2 |
+|---|---|---|
+| Long-term storage / archival | ✓ designed for this | ✗ intended as ephemeral interchange |
+| File size | Smaller (column encoding + compression schemes) | Larger (raw Arrow memory, basic LZ4/ZSTD only) |
+| Read/write speed | Slightly slower to write | Faster (no re-encoding) |
+| R interoperability | ✓ via `arrow` package | ✓ via `arrow` package |
+| Python (pandas/polars) | ✓ via `pyarrow` | ✓ via `pyarrow.feather` |
+| Ecosystem / tooling | Industry standard; DuckDB, Spark, cloud | Narrower; mostly Python/R data science |
+| Schema + metadata storage | Rich (column types, row groups, custom KV metadata) | Limited |
+| Column-selective reads | ✓ | ✓ |
+
+**Verdict:** Feather is faster for hot intermediate scratch files (passed between pipeline steps in memory or on fast local SSD). Parquet is correct for `data_lake/curated/` — the durable, versioned, cross-tool artefacts. For this project's scale (95 source datasets, all small-to-medium), the speed difference is irrelevant.
+
+**Parquet settings we'll standardise on:**
+- Engine: `pyarrow` (not `fastparquet` — pyarrow has better type fidelity and is actively developed)
+- Compression: `snappy` (default; good balance of speed and size; universally readable)
+- Row group size: default (adequate for datasets of this scale)
+- Schema: written from pandas with `preserve_index=True` so MultiIndex panels round-trip correctly
+
+**Type preservation note:** Parquet via pyarrow preserves `int8/16/32`, `float32`, `bool`, `datetime64`, `Categorical` (as dictionary-encoded), and `pd.NA`-aware nullable integer/string types. The one thing it does **not** preserve natively is Stata metadata (variable labels, value labels, format strings) — that is handled separately (see §1.3).
+
+---
+
+## 1. DATA PIPELINE
+
+### 1.0 Pipeline overview
+
+```
+raw/.dta or .csv
+      ↓
+  load_raw()         — verified against manifest hash; metadata extracted
+      ↓
+  inspect()          — profiling: shape, dtypes, missing, distributions
+      ↓
+  clean()            — rename, recode, drop/impute missings, fix dtypes
+      ↓
+  transform()        — logs, lags, diffs, dummies, interactions
+      ↓
+  construct()        — panel indexing, merges, derived variables
+      ↓
+  save_curated()     — versioned Parquet to data_lake/curated/
+```
+
+Each step is a pure function: `(DataFrame, **kwargs) → DataFrame`. No in-place mutation. Audit trail via function arguments logged to a sidecar `_provenance.json`.
+
+---
+
+### 1.1 Ingestion — `.dta` (Stata)
+
+`.dta` files contain richer metadata than CSV: variable labels, value labels (factor levels), display formats, and Stata-specific missing value codes. The loading function must extract and preserve all of this before it is discarded by the analysis pipeline.
+
+| Operation | Library / call | Output | Notes |
+|---|---|---|---|
+| Load data + auto-convert | `pd.read_stata(path, convert_dates=True, convert_categoricals=True, preserve_dtypes=True, convert_missing=False)` | `pd.DataFrame` | `convert_categoricals=True` turns value-labelled vars into `pd.Categorical`; `preserve_dtypes=True` keeps Stata int8/int16/float32 rather than upcasting everything |
+| Extract variable labels | `pd.io.stata.StataReader(path).variable_labels()` | `dict[str, str]` | e.g. `{'educ': 'Years of schooling', 'wage': 'Hourly wage'}` — must be extracted separately before `read_stata` closes the file |
+| Extract value labels | `pd.io.stata.StataReader(path).value_labels()` | `dict[str, dict[int, str]]` | e.g. `{'married': {0: 'Single', 1: 'Married'}}` — the codebook for each labelled variable |
+| Extract data label (dataset description) | `reader.data_label` | `str` | Dataset-level description string |
+| Extract variable format strings | `reader.fmtlist` | `list[str]` | Stata display formats per column |
+| Verify hash before load | custom `verify_hash(path, expected)` | raises on mismatch | Uses manifest.json; wraps `hashlib.sha256` |
+
+**Metadata preservation strategy:** We save all extracted metadata into a sidecar `.json` file alongside the curated Parquet, named `<dataset>_meta.json`. This keeps the metadata queryable without re-reading the raw `.dta`. Structure:
+
+```json
+{
+  "source_file": "wage1.dta",
+  "source_sha256": "abc123...",
+  "data_label": "Wage data from Wooldridge Ch4",
+  "variable_labels": {"educ": "Years of schooling", ...},
+  "value_labels": {"married": {0: "Single", 1: "Married"}, ...},
+  "stata_dtypes": {"educ": "int8", "wage": "float32", ...},
+  "loaded_at": "2026-02-26T12:00:00Z"
+}
+```
+
+**Known pandas/Stata caveats:**
+- `convert_missing=False` (our default) silently drops Stata's extended missing values (`.a`, `.b`, …, `.z`) to `NaN`. Use `convert_missing=True` only if you need to distinguish missing types — it produces `pd.NA` sentinel objects that break many numeric operations.
+- Value labels that only partially cover a column's range cause the column to read as `object` not `Categorical` when using iterators; use full `read_stata()` not chunked reading for small datasets.
+- `StataReader.variable_labels()` must be called via the iterator/reader interface, not the top-level `read_stata()` function (which returns only the DataFrame).
+- Stata format versions 113–118 (Stata 10–14+) all supported.
+
+---
+
+### 1.2 Ingestion — `.csv`
+
+| Operation | Library / call | Notes |
+|---|---|---|
+| Basic load | `pd.read_csv(path, dtype_backend='numpy_nullable')` | `dtype_backend='numpy_nullable'` gives nullable int/bool types instead of float-coerced columns with NaN |
+| Specify dtypes explicitly | `pd.read_csv(path, dtype={'col': 'Int32', ...})` | Always prefer explicit dtype spec for numeric columns to avoid silent float upcast |
+| Parse dates | `pd.read_csv(path, parse_dates=['date_col'])` | Use `format=` arg if format is known for speed |
+| Missing value codes | `pd.read_csv(path, na_values=['.', '99', '-999'])` | Explicitly declare non-standard missing codes |
+| Load subset of columns | `pd.read_csv(path, usecols=['y', 'x1', 'x2'])` | Use for large CSVs |
+| Infer and audit types | custom `audit_dtypes(df)` | After loading, check for object columns that should be numeric, flag ambiguous types |
+
+---
+
+### 1.3 Metadata store (sidecar `.json`)
+
+The `_meta.json` sidecar lives next to the curated Parquet in `data_lake/curated/`. For CSV sources it contains whatever can be inferred or is manually annotated.
+
+| Field | Source | Notes |
+|---|---|---|
+| `source_file` | ingestion arg | Original filename |
+| `source_sha256` | manifest.json lookup | Pinned hash of raw source |
+| `data_label` | `reader.data_label` | Dataset-level description (Stata only) |
+| `variable_labels` | `reader.variable_labels()` | Human-readable column descriptions |
+| `value_labels` | `reader.value_labels()` | Codebook for categorical/labelled vars |
+| `stata_dtypes` | `reader.dtyplist` | Original Stata storage types |
+| `source_type` | `'dta'` or `'csv'` | Format tag |
+| `loaded_at` | `datetime.utcnow()` | ISO timestamp |
+| `curated_version` | e.g. `'v1'` | Matches filename version suffix |
+| `panel_index` | e.g. `['nr', 'year']` | Set at construction step if panel |
+
+---
+
+### 1.4 Saving — curated Parquet
+
+| Operation | Library / call | Notes |
+|---|---|---|
+| Save DataFrame | `df.to_parquet(path, engine='pyarrow', compression='snappy', index=True)` | `index=True` preserves MultiIndex for panels |
+| Save with schema enforcement | `pa.Table.from_pandas(df, schema=schema)` then `pq.write_table(...)` | Use when you want to explicitly pin the Arrow schema |
+| Versioned filename | custom `versioned_path(name, version)` | Returns e.g. `wages_panel_v1.parquet` |
+| Read back | `pd.read_parquet(path, engine='pyarrow')` | Types round-trip correctly incl. Categorical, nullable int |
+| Read specific columns | `pd.read_parquet(path, columns=['y', 'x1'])` | Parquet columnar read — avoids loading unused columns |
+
+**Parquet type round-trip table** (what survives through save/load):
+
+| pandas dtype | Arrow type | Survives? |
+|---|---|---|
+| `float64` | `double` | ✓ |
+| `float32` | `float` | ✓ |
+| `int64` | `int64` | ✓ |
+| `Int64` (nullable) | `int64` + validity bitmap | ✓ |
+| `int8`, `int16`, `int32` | `int8/16/32` | ✓ |
+| `bool` | `bool` | ✓ |
+| `object` (strings) | `large_string` | ✓ |
+| `pd.Categorical` (unordered) | dictionary-encoded | ✓ — reads back as `pd.Categorical` |
+| `pd.Categorical` (ordered) | dictionary-encoded + ordered flag | ✓ |
+| `datetime64[ns]` | `timestamp[ns]` | ✓ |
+| `pd.MultiIndex` | stored as columns + `__index_level_N__` | ✓ with `index=True` |
+
+---
+
+### 1.5 Inspection / Profiling
+
+Run after loading, before any cleaning. All return either DataFrames or dicts so outputs are loggable.
+
+| Operation | Library / call | Output | Notes |
+|---|---|---|---|
+| Shape, dtypes, memory | `df.info()` / `df.dtypes` / `df.memory_usage(deep=True)` | printed / Series | Baseline audit |
+| Summary statistics | `df.describe(include='all')` | DataFrame | count, mean, std, min, percentiles, max; include='all' covers categoricals |
+| Missing value audit | custom `missing_report(df)` → `df.isnull().sum()` + pct | DataFrame | Per-column count and % missing; flag columns above threshold |
+| Cardinality check | custom `cardinality(df)` → `df.nunique()` | Series | Identify near-constant or high-cardinality columns |
+| Value frequency table | `df[col].value_counts(dropna=False)` | Series | Include NaN in counts |
+| Duplicate rows | `df.duplicated().sum()` / `df[df.duplicated()]` | int / DataFrame | Check for accidental duplicates |
+| Panel balance check | custom `balance_report(df, entity, time)` | DataFrame | Counts obs per entity × time; flags unbalanced panel |
+| Correlation matrix | `df.corr(numeric_only=True)` | DataFrame | Pairwise Pearson; visual via heatmap |
+| Distribution quick-look | custom `dist_summary(df, col)` | dict with percentiles, skew, kurtosis | Wraps `scipy.stats.describe` |
+
+---
+
+### 1.6 Cleaning
+
+| Operation | Library / call | Notes |
+|---|---|---|
+| Rename columns | `df.rename(columns={...})` or `df.columns = [snake_case(c) for c in df.columns]` | Standardise to snake_case; custom `snake_case()` util |
+| Drop columns | `df.drop(columns=[...])` | |
+| Cast dtypes | `df['col'].astype('float64')` / `pd.to_numeric(df['col'], errors='coerce')` | `errors='coerce'` converts unparseable to NaN |
+| Drop missing rows | `df.dropna(subset=[...])` | Only on specified columns |
+| Fill missing | `df[col].fillna(method)` / `df[col].fillna(df[col].median())` | Document imputation choice in provenance |
+| Winsorise | custom `winsorise(df, col, lower=0.01, upper=0.99)` | Clip at specified quantiles; no native pandas function |
+| Recode values | `df[col].map({old: new, ...})` | For value label recoding |
+| Replace sentinel missing | `df.replace({99: np.nan, -999: np.nan})` | Explicit non-standard missing codes |
+| Strip whitespace (strings) | `df[col].str.strip()` | Common issue with Stata string vars |
+| Assert no negatives | custom assertion util | e.g. wages, counts |
+| Assert range validity | custom assertion util | e.g. probabilities in [0,1] |
+
+---
+
+### 1.7 Transformation
+
+| Operation | Library / call | Notes |
+|---|---|---|
+| Log transform | `np.log(df[col])` | Adds `log_<col>` convention; assert positivity first |
+| Log(1+x) | `np.log1p(df[col])` | For zero-inclusive vars |
+| Lag (panel / time-series) | `df.groupby(entity)[col].shift(k)` | k periods back; requires sorted index |
+| Lead | `df.groupby(entity)[col].shift(-k)` | k periods forward |
+| First difference | `df.groupby(entity)[col].diff(k)` | Δₖxᵢₜ |
+| Growth rate | `df.groupby(entity)[col].pct_change(k)` | (xₜ - xₜ₋ₖ)/xₜ₋ₖ |
+| Dummy/indicator | `pd.get_dummies(df[col], drop_first=True)` | `drop_first=True` avoids perfect multicollinearity |
+| Interaction term | `df['x1'] * df['x2']` | Named `x1_x2` by convention |
+| Polynomial term | `df['x'] ** 2` | Named `x_sq` by convention |
+| Standardise (z-score) | `(df[col] - df[col].mean()) / df[col].std()` | Or `sklearn.preprocessing.StandardScaler` |
+| Demean within entity | `df[col] - df.groupby(entity)[col].transform('mean')` | Manual within-transformation (FE demeaning) |
+| Time trend | `df['t'] = df.groupby(entity).cumcount()` | Integer time trend within panel |
+| Rolling mean | `df.groupby(entity)[col].transform(lambda x: x.rolling(k).mean())` | Panel-aware rolling |
+
+---
+
+### 1.8 Panel data construction
+
+Panel data requires a `(entity, time)` MultiIndex for linearmodels. This step is where raw long-format data gets structured correctly.
+
+| Operation | Library / call | Notes |
+|---|---|---|
+| Set panel index | `df.set_index([entity_col, time_col])` | Order matters: entity first, time second (lm convention) |
+| Verify MultiIndex | `isinstance(df.index, pd.MultiIndex)` | Assert before passing to lm |
+| Sort index | `df.sort_index()` | Required for lags/diffs to be correct |
+| Check balance | custom `is_balanced(df)` | Every entity × time cell present? |
+| Check min obs per entity | `df.groupby(level=0).size().min()` | FE requires T ≥ 2 per entity |
+| Entity/time summary | custom `panel_summary(df)` | N entities, T periods, avg/min/max obs, balanced flag |
+| Reshape wide → long | `pd.wide_to_long(df, stubnames, i, j)` or `pd.melt(...)` | For datasets stored as one column per year |
+| Reshape long → wide | `df.pivot(index, columns, values)` | For cross-sectional datasets stored long |
+
+---
+
+### 1.9 Merging & joining
+
+| Operation | Library / call | Notes |
+|---|---|---|
+| Merge two datasets | `pd.merge(left, right, on=keys, how='left/inner/outer')` | Default to `how='left'`; always assert no unexpected row count change |
+| Concatenate (append rows) | `pd.concat([df1, df2], ignore_index=True)` | For stacking datasets from same source |
+| Merge audit | custom `merge_audit(left, right, merged)` | Reports: matched rows, left-only, right-only, duplicates created |
+| Assert no key duplicates | `assert not df[keys].duplicated().any()` | Before any merge |
+
+---
+
+### 1.10 What we implement ourselves (data layer gaps)
+
+| Gap | Why / plan |
+|---|---|
+| `winsorise(df, col, lower, upper)` | No native pandas; wrap `np.clip` with quantile computation |
+| `missing_report(df)` | Prettier than `.isnull().sum()`; returns DataFrame with count + pct + dtype |
+| `balance_report(df, entity, time)` | Pivot entity × time → count; flag gaps; no native equivalent |
+| `panel_summary(df)` | Aggregates N, T, balance status, min obs — needed before any panel estimator |
+| `merge_audit(left, right, merged)` | Diagnose unexpected row inflation or missing matches |
+| `snake_case(name)` | Regex-based column name normaliser |
+| `provenance log` | Append-only JSON log of pipeline steps applied to each dataset |
+| `audit_dtypes(df)` | Heuristically flag object columns that should be numeric (all values parseable as float) |
+| `dist_summary(df, col)` | Wraps scipy.stats.describe + quantiles into a clean dict |
+
+---
+
+## 0. Reading guide
+
+Each section follows the pipeline layer from your framework:
+
+```
+DATA → MODEL → ESTIMATOR → SAMPLING DIST → INFERENCE → DIAGNOSTICS → EVALUATION
+```
+
+Within each section, columns are:
+
+| Column | Meaning |
+|---|---|
+| **Item** | What we expose in the toolkit |
+| **Library / call** | The exact import path or function to use |
+| **Result object / output** | What the library actually returns — attributes we rely on |
+| **Notes / gaps** | Caveats, missing pieces, or things we must compute ourselves |
+
+---
+
+## 1. MODELS & ESTIMATORS
+
+### 1.1 Cross-sectional / single-equation
+
+| Item | Estimator class | Library / call | Result type | Key output attrs |
+|---|---|---|---|---|
+| OLS | Ordinary Least Squares | `sm.OLS(y, X).fit(cov_type=...)` | `OLSResults` | `params`, `bse`, `tvalues`, `pvalues`, `resid`, `fittedvalues`, `df_model`, `df_resid`, `ssr`, `ess`, `centered_tss` |
+| WLS | Weighted LS | `sm.WLS(y, X, weights=w).fit(...)` | `RegressionResults` | same as OLS |
+| GLS | Generalised LS | `sm.GLS(y, X, sigma=Ω).fit(...)` | `RegressionResults` | same as OLS |
+| FGLS | Feasible GLS | `sm.GLSAR(y, X, rho=r).iterative_fit(...)` | `RegressionResults` | same as OLS |
+| Probit | Binary outcome | `sm.Probit(y, X).fit()` | `ProbitResults` | `params`, `bse`, `margeff()` → `MargEffResults` |
+| Logit | Binary outcome | `sm.Logit(y, X).fit()` | `LogitResults` | same as Probit; `pred_table()` |
+| Poisson | Count outcome | `sm.Poisson(y, X).fit()` | `PoissonResults` | `params`, `bse`, `predict()` |
+| Neg. Binomial | Count (overdispersed) | `sm.NegativeBinomial(y, X).fit()` | `NegativeBinomialResults` | `params`, `bse`, `llf` |
+| Tobit / censored | Truncated/censored | `sm.Tobit` — **not in sm**; use `statsmodels.duration` or custom | — | Must wrap manually |
+| OLS (formula) | Same | `smf.ols("y ~ x1 + x2", data).fit()` | `OLSResults` | same as OLS |
+
+### 1.2 Instrumental Variables (single-equation)
+
+| Item | Estimator | Library / call | Result type | Key output attrs |
+|---|---|---|---|---|
+| 2SLS | Two-stage LS | `lm.IV2SLS(dep, exog, endog, instr).fit(cov_type=...)` | `IVResults` (subclass of `OLSResults`) | `params`, `std_errors`, `tstats`, `pvalues`, `rsquared`, `first_stage` |
+| LIML | Limited-info ML | `lm.IVLIML(dep, exog, endog, instr).fit(...)` | `IVResults` | same + `kappa` |
+| GMM-IV | Efficient GMM | `lm.IVGMM(dep, exog, endog, instr).fit(...)` | `IVGMMResults` | `params`, `std_errors`, `j_stat`, `weight_matrix` |
+| CUE-GMM | Continuously updating | `lm.IVGMMCUE(dep, exog, endog, instr).fit(...)` | `IVGMMResults` | same as GMM-IV |
+| OLS via IV2SLS | Passes through as OLS | `lm.IV2SLS(dep, exog, None, None).fit(...)` | `OLSResults` | same as OLS |
+| High-dim / many FE | Absorbing LS | `lm.AbsorbingLS(dep, exog, absorb=cats).fit(...)` | `AbsorbingLSResults` | `params`, `std_errors`, absorbed df info |
+
+**Formula syntax for IV2SLS:**
+`"log(wage) ~ 1 + exper + exper**2 + [educ ~ sibs]"` — endogenous in `[endog ~ instruments]` block.
+
+### 1.3 Panel Data
+
+| Item | Estimator | Library / call | Result type | Key output attrs |
+|---|---|---|---|---|
+| Pooled OLS | No effects | `lm.PooledOLS(dep, exog).fit(cov_type=...)` | `PanelResults` | `params`, `std_errors`, `rsquared`, `rsquared_between`, `rsquared_within`, `rsquared_overall`, `f_statistic` |
+| Fixed Effects (1-way entity) | Within | `lm.PanelOLS(dep, exog, entity_effects=True).fit(...)` | `PanelEffectsResults` | all of above + `f_poolability`, `included_effects`, `estimated_effects` |
+| Fixed Effects (2-way) | Within (entity + time) | `lm.PanelOLS(dep, exog, entity_effects=True, time_effects=True).fit(...)` | `PanelEffectsResults` | same |
+| Random Effects | GLS/quasi-demeaning | `lm.RandomEffects(dep, exog).fit(...)` | `RandomEffectsResults` | `params`, `std_errors`, `theta` (variance component) |
+| First Difference | FD | `lm.FirstDifferenceOLS(dep, exog).fit(...)` | `PanelResults` | `params`, `std_errors` |
+| Between | Between-entity | `lm.BetweenOLS(dep, exog).fit(...)` | `PanelResults` | `params`, `rsquared_between` |
+| Fama-MacBeth | Cross-section avg | `lm.FamaMacBeth(dep, exog).fit(...)` | `FamaMacBethResults` | `params`, `std_errors` (Shanken-corrected optional) |
+
+**Panel data input:** `dep` and `exog` must be from a `MultiIndex` DataFrame with `(entity, time)` index.
+
+### 1.4 System Estimators
+
+| Item | Estimator | Library / call | Result type | Key output attrs |
+|---|---|---|---|---|
+| SUR | Seemingly Unrelated | `lm.SUR(equations).fit(...)` | `SURResults` | per-equation `params`, `std_errors`, `sigma` (cross-eq cov) |
+| 3SLS | Three-stage LS | `lm.IV3SLS(equations).fit(...)` | `IV3SLSResults` | same + first-stage info |
+| System GMM | GMM system | `lm.IVSystemGMM(equations).fit(...)` | `IVSystemGMMResults` | same + `j_stat` |
+
+### 1.5 Asset Pricing
+
+| Item | Estimator | Library / call | Result type |
+|---|---|---|---|
+| Linear Factor Model (2-step) | Fama-MacBeth 2-pass | `lm.LinearFactorModel(portfolios, factors).fit()` | `LinearFactorModelResults` |
+| Linear Factor Model (GMM) | GMM | `lm.LinearFactorModelGMM(portfolios, factors).fit()` | `LinearFactorModelGMMResults` |
+| Traded Factor Model | 1-step SUR | `lm.TradedFactorModel(portfolios, factors).fit()` | `TradedFactorModelResults` |
+
+---
+
+## 2. VARIANCE ESTIMATORS (Standard Errors)
+
+The SE choice is passed at `.fit()` time. This table maps our label to the library arguments.
+
+### 2.1 For `sm.OLS` / `sm.WLS` / `sm.GLS`
+
+| Our label | `cov_type` arg | Notes |
+|---|---|---|
+| Classical (homoskedastic) | `'nonrobust'` | Default; assume σ²(X'X)⁻¹ |
+| HC0 | `'HC0'` | White (1980) — no df correction |
+| HC1 | `'HC1'` | HC0 scaled by n/(n-k) |
+| HC2 | `'HC2'` | Leverage-adjusted: e²/(1-hᵢᵢ) |
+| HC3 | `'HC3'` | Most conservative; e²/(1-hᵢᵢ)² — recommended default for robust |
+| HAC / Newey-West | `'HAC'` + `maxlags=L` | Auto or manual bandwidth; `cov_kwds={'maxlags': L}` |
+| Clustered (1-way) | `'cluster'` + `groups=cluster_var` | `cov_kwds={'groups': g}` |
+| Driscoll-Kraay | not in sm natively | Use linearmodels kernel SE or manual — see §2.3 |
+
+**Note:** `OLSResults` also exposes `HC0_se`, `HC1_se`, `HC2_se`, `HC3_se` as direct attributes (lazy-computed), so you don't need to re-fit for these.
+
+### 2.2 For `lm.IV2SLS` and panel estimators
+
+| Our label | `cov_type` arg | Extra `cov_config` kwargs |
+|---|---|---|
+| Classical | `'unadjusted'` or `'homoskedastic'` | `debiased=True/False` |
+| Heteroskedastic | `'robust'` or `'heteroskedastic'` | `debiased=True/False` |
+| Clustered (1-way entity) | `'clustered'` | `cluster_entity=True` |
+| Clustered (1-way time) | `'clustered'` | `cluster_time=True` |
+| Clustered (2-way) | `'clustered'` | `cluster_entity=True, cluster_time=True` |
+| HAC / Driscoll-Kraay | `'kernel'` | `kernel='bartlett'` (default), `bandwidth=L` |
+| Newey-West | `'kernel'` | `kernel='bartlett'`, `bandwidth=L` |
+
+**Key:** linearmodels is substantially better than statsmodels for panel SE types. For cross-section models, prefer sm; for panel/IV, use lm.
+
+### 2.3 Bootstrap SEs (custom)
+
+Not natively supported in either library for all model types. Plan to implement as a utility:
+- Pairs bootstrap (resample observations)
+- Wild bootstrap (resample residuals × Rademacher weights)
+- Cluster bootstrap (resample clusters)
+
+Output: bootstrapped SE, CI (percentile and BC-corrected), and optional p-values via inversion.
+
+---
+
+## 3. INFERENCE OUTPUTS
+
+These come directly from result objects — no extra work needed.
+
+| Quantity | sm attribute | lm attribute | Notes |
+|---|---|---|---|
+| Coefficients β̂ | `.params` | `.params` | pd.Series, index = regressor names |
+| Standard errors | `.bse` | `.std_errors` | pd.Series |
+| t-statistics | `.tvalues` | `.tstats` | pd.Series |
+| p-values (t-test) | `.pvalues` | `.pvalues` | pd.Series |
+| Confidence intervals | `.conf_int(alpha=0.05)` | `.conf_int(level=0.95)` | DataFrame [lower, upper] |
+| Covariance matrix | `.cov_params()` | `.cov` | DataFrame |
+| F-statistic (joint) | `.fvalue`, `.f_pvalue` | `.f_statistic`, `.f_statistic.pval` | Tests all slopes = 0 |
+| F-statistic (robust) | after `fit(cov_type='HC3')` | `.f_statistic_robust` | lm exposes both simultaneously |
+| Wald test (linear restrictions) | `.f_test(R)` or `.wald_test(R)` | `.wald_test(restriction, value)` or `.wald_test(formula=...)` | Returns `ContrastResults` / `WaldTestStatistic` |
+| LM test | `sm.stats.diagnostic.*` | — | Various (see §4) |
+| Likelihood ratio test | `.compare_lr_test(res2)` | — | sm only; both models same data |
+
+### 3.1 Wald test interface (linearmodels)
+
+Supports both matrix and formula syntax:
+```python
+# Formula (preferred)
+res.wald_test(formula="x1 = x2 = 0")
+res.wald_test(formula=["x1 = 0", "x2 + x3 = 1"])
+# Matrix
+R = np.array([[1, 0, 0], [0, 1, 0]])
+v = np.array([0, 0])
+res.wald_test(R, v)
+```
+Returns `WaldTestStatistic` with `.stat`, `.pval`, `.df`, `.dist_name`.
+
+### 3.2 IV-specific inference
+
+| Quantity | lm call | Description |
+|---|---|---|
+| First-stage F (partial) | `res.first_stage.diagnostics` | Partial R², Shea's R², partial F-stat, p-value, distribution |
+| First-stage individual results | `res.first_stage.individual['varname']` | Full OLS result for each endogenous var |
+| Sargan test (overidentification) | `res.sargan` | `WaldTestStatistic`; χ²(m-k) where m=instruments, k=endog |
+| Basmann test (overidentification) | `res.basmann` | Alternative to Sargan; same output type |
+| Wu-Hausman endogeneity | `res.wu_hausman()` | Tests if OLS is consistent; optional `variables` arg |
+| Durbin endogeneity | `res.durbin()` | Robust to heteroskedasticity vs Wu-Hausman |
+| C-statistic (GMM only) | `res.c_stat()` | Tests subset of instruments |
+
+---
+
+## 4. DIAGNOSTICS (Assumption tests)
+
+### 4.1 Heteroskedasticity
+
+| Test | Null | sm call | Returns |
+|---|---|---|---|
+| Breusch-Pagan | σ² constant | `sms.het_breuschpagan(resid, exog)` | `(lm_stat, lm_pval, f_stat, f_pval)` |
+| White | σ² constant (no functional form assumed) | `sms.het_white(resid, exog)` | `(lm_stat, lm_pval, f_stat, f_pval)` |
+| Goldfeld-Quandt | σ² equal in two subsamples | `sms.het_goldfeldquandt(y, X, split=0.5)` | `(f_stat, p_val, ordering)` |
+
+**Note:** `sms` = `import statsmodels.stats.api as sms`. All three take raw residuals + original exog matrix, not a result object.
+
+### 4.2 Serial Correlation / Autocorrelation
+
+| Test | Null | sm call | Returns |
+|---|---|---|---|
+| Durbin-Watson | No AR(1) autocorrelation | `sms.durbin_watson(resid)` | scalar DW statistic (no p-value — compare to tables) |
+| Breusch-Godfrey | No serial correlation up to lag L | `sms.acorr_breusch_godfrey(results, nlags=L)` | `(lm_stat, lm_pval, f_stat, f_pval)` |
+| Ljung-Box | No autocorrelation at lags 1..L | `sms.acorr_ljungbox(resid, lags=L)` | DataFrame with `lb_stat`, `lb_pvalue` per lag; also Box-Pierce |
+
+**Note:** DW has no p-value — we will look up bounds tables or use BG instead for hypothesis testing.
+
+### 4.3 Normality of Residuals
+
+| Test | Null | sm/sp call | Returns |
+|---|---|---|---|
+| Jarque-Bera | Normal residuals (skew=0, excess kurt=0) | `sms.jarque_bera(resid)` | `(jb_stat, jb_pval, skew, kurtosis)` |
+| Omnibus (D'Agostino-Pearson) | Normal (via skew+kurtosis) | `sms.omni_normtest(resid)` | `(stat, pval)` |
+| Shapiro-Wilk | Normal | `sp.shapiro(resid)` | `(stat, pval)`; best for small n |
+| Kolmogorov-Smirnov / Lilliefors | Normal (estimated params) | `sms.kstest_normal(resid)` | `(ks_stat, pval)` |
+
+### 4.4 Functional Form / Specification
+
+| Test | Null | sm call | Returns |
+|---|---|---|---|
+| RESET (Ramsey) | Correct functional form | `sms.linear_reset(results, power=3, use_f=True)` | `ContrastResults` with `.statistic`, `.pvalue`, `.df_denom` |
+| Harvey-Collier | Linear functional form | `sms.linear_harvey_collier(results)` | `(t_stat, pval)` |
+| Rainbow | Linear spec (random subset F test) | `sms.linear_rainbow(results)` | `(f_stat, pval)` |
+
+### 4.5 Multicollinearity
+
+| Measure | sm call | Returns |
+|---|---|---|
+| VIF (each regressor) | `from statsmodels.stats.outliers_influence import variance_inflation_factor` → loop over columns | scalar per column |
+| Condition number | `results.condition_number` | scalar; >30 indicates potential problem |
+| Correlation matrix | manual `np.corrcoef(X.T)` | array |
+
+**Note:** There is no single-call VIF for the whole model — we wrap the loop into our own `compute_vif(X)` returning a Series.
+
+### 4.6 Influence & Outliers
+
+All come from `OLSInfluence(results)`:
+
+| Measure | Attribute / method | Description |
+|---|---|---|
+| Leverage | `.hat_matrix_diag` | hᵢᵢ from X(X'X)⁻¹X' |
+| Standardised residuals | `.resid_studentized_internal` | eᵢ/s√(1-hᵢᵢ) |
+| Studentised (external) | `.resid_studentized_external` | Delete-one; t-distributed |
+| Cook's D | `.cooks_distance[0]` | Overall influence |
+| DFFITS | `.dffits[0]` | Scaled change in fitted value |
+| DFBETAs | `.dfbetas` | Change in each β when obs i deleted; (n × k) array |
+| COVRATIO | `.covratio` | Change in det(Cov) when obs i deleted |
+| Welsch-Kuh | `.welsch_kuh` | Scaled version of DFFITS |
+
+### 4.7 Panel-specific tests
+
+| Test | What it tests | lm / sm call |
+|---|---|---|
+| F-test for poolability | All entity effects = 0 (H₀: Pool is valid) | `res.f_poolability` on `PanelEffectsResults` — exposed automatically |
+| Hausman (FE vs RE) | RE is consistent (H₀: RE, H₁: FE) | Not directly in lm — compute manually via `linearmodels.panel.utility.hausman(fe_res, re_res)` or custom |
+| Breusch-Pagan LM (RE presence) | σ²_α = 0 (H₀: Pooled) | `sm.stats.diagnostic.het_breuschpagan` on residuals from pooled; or manually |
+
+---
+
+## 5. FIT & EVALUATION METRICS
+
+### 5.1 Cross-sectional / OLS
+
+| Metric | sm attribute | Notes |
+|---|---|---|
+| R² | `.rsquared` | In-sample, centred |
+| Adjusted R² | `.rsquared_adj` | Penalises k |
+| Log-likelihood | `.llf` | At MLE |
+| AIC | `.aic` | −2llf + 2(k+1) |
+| BIC | `.bic` | −2llf + log(n)(k+1) |
+| F-statistic | `.fvalue` | Tests β₁=…=βₖ=0 |
+| Prob(F) | `.f_pvalue` | |
+| σ̂ (RMSE) | `np.sqrt(results.mse_resid)` | s = √(SSR/df_resid) |
+| SSR / SSE | `.ssr` / `.ess` | Residual sum of squares / explained |
+| TSS | `.centered_tss` | |
+| Predicted values | `.fittedvalues` | In-sample |
+| Out-of-sample predictions | `.predict(X_new)` | |
+| Pseudo-R² (GLM) | — | McFadden: 1 - llf/llf_null; from `results.prsquared` on Logit/Probit |
+
+### 5.2 Panel-specific R² variants (linearmodels)
+
+| Metric | lm attribute | Meaning |
+|---|---|---|
+| R² (within) | `.rsquared` or `.rsquared_within` | Fit after demeaning — primary for FE |
+| R² (between) | `.rsquared_between` | Fit on entity means |
+| R² (overall) | `.rsquared_overall` | Fit on original data ignoring panel structure |
+| R² (inclusive) | `.rsquared_inclusive` | Includes estimated effects (like LSDV R²) — use `res.rsquared_inclusive` |
+| Log-likelihood | `.loglik` | |
+| F-statistic | `.f_statistic` | `WaldTestStatistic` object |
+| F-statistic (robust) | `.f_statistic_robust` | Using chosen cov_type |
+| F-poolability | `.f_poolability` | Test of individual effects = 0 |
+
+### 5.3 IV-specific fit
+
+| Metric | lm attribute | Notes |
+|---|---|---|
+| R² | `.rsquared` | Can be negative for IV |
+| Adj R² | `.rsquared_adj` | |
+| First-stage R² | `.first_stage.diagnostics['rsquared']` | Per endogenous variable |
+| Partial R² | `.first_stage.diagnostics['partial.rsquared']` | Instruments partial out of exog |
+| Shea's partial R² | `.first_stage.diagnostics['shea.rsquared']` | Multivariate generalisation |
+| Partial F (1st stage) | `.first_stage.diagnostics['f.stat']` | Rule of thumb: > 10 for strong instruments |
+
+### 5.4 Binary outcome models (Probit / Logit)
+
+| Metric | sm attribute / call | Notes |
+|---|---|---|
+| Pseudo-R² (McFadden) | `.prsquared` | 1 - llf/llf_null |
+| Log-likelihood | `.llf` | |
+| AIC / BIC | `.aic` / `.bic` | |
+| LR statistic | `.llr` | 2(llf - llf_null) |
+| LR p-value | `.llr_pvalue` | |
+| Marginal effects (at mean) | `.get_margeff(at='mean')` | Returns `MargEffResults`; `.margeff`, `.margeff_se`, `.pvalues`, `.conf_int()` |
+| Marginal effects (average) | `.get_margeff(at='overall')` | AME — more common in practice |
+| Predicted probabilities | `.predict(X)` | In [0,1] |
+| Classification table | `.pred_table(threshold=0.5)` | 2×2 confusion matrix |
+
+---
+
+## 6. HYPOTHESIS TESTS (stand-alone)
+
+Beyond the diagnostics above, these are general-purpose tests we'll expose:
+
+| Test | Purpose | sm/sp call |
+|---|---|---|
+| t-test (1-sample) | H₀: μ = μ₀ | `sp.ttest_1samp(x, popmean)` |
+| t-test (2-sample, ind.) | H₀: μ₁ = μ₂ | `sp.ttest_ind(x1, x2, equal_var=True/False)` |
+| t-test (paired) | H₀: Δμ = 0 | `sp.ttest_rel(x1, x2)` |
+| F-test (equality of variances) | H₀: σ₁² = σ₂² | `sp.f_oneway(...)` or `sp.levene(...)` |
+| Chi-squared (independence) | H₀: variables independent | `sp.chi2_contingency(table)` |
+| Chi-squared (goodness of fit) | H₀: observed ~ expected | `sp.chisquare(f_obs, f_exp)` |
+| Mann-Whitney | Non-parametric rank test | `sp.mannwhitneyu(x1, x2)` |
+| Kolmogorov-Smirnov | Two-sample distribution equality | `sp.ks_2samp(x1, x2)` |
+| Chow test (structural break) | H₀: same coefficients across subsamples | custom (two separate OLS + restricted OLS) |
+| Sup-Wald / Andrews break test | H₀: no unknown structural break | `sm.stats.diagnostic.breaks_cusumolsresid` or manual |
+
+---
+
+## 7. PLOTS
+
+All plot functions in our toolkit will return `matplotlib.Figure` objects. Never call `plt.show()` internally.
+
+### 7.1 Residual diagnostics
+
+| Plot | How to produce | Description |
+|---|---|---|
+| Residuals vs Fitted | manual: `ax.scatter(fitted, resid)` + lowess | Check linearity and homoskedasticity |
+| Scale-Location (√\|std resid\| vs fitted) | manual | Check homoskedasticity (trend should be flat) |
+| Q-Q plot of residuals | `sm.graphics.qqplot(resid, fit=True)` or `sp.probplot` | Check normality |
+| Residuals vs Leverage | `smi.plot_lm_influence(results)` or manual from `OLSInfluence` | Identify influential observations |
+| Cook's D plot | manual from `influence.cooks_distance` | Bar chart of individual influence |
+| CCPR / Partial regression | `sm.graphics.plot_ccpr(results, 'varname')` | Conditional on other regressors |
+| Added variable plots | `sm.graphics.plot_partregress(results, 'y', ['x'], obs_labels=True)` | FWL visualisation |
+| CUSUM / CUSUMSQ | `sm.graphics.plot_cusum(results)` | Structural stability over time |
+
+### 7.2 Coefficient plots
+
+| Plot | How to produce | Description |
+|---|---|---|
+| Coefficient forest plot | manual: `ax.errorbar(params, range(k), xerr=1.96*bse, fmt='o')` | β̂ ± 1.96σ̂ for all regressors |
+| Multi-model coefficient comparison | manual from list of results | Same coefficient across specs |
+| Marginal effects plot | manual from `MargEffResults` | AMEs with CIs for binary models |
+
+### 7.3 Data / distribution plots
+
+| Plot | How to produce | Description |
+|---|---|---|
+| Scatter with fit | `ax.scatter` + `ax.plot(x, fitted)` | Raw data + regression line |
+| Binscatter | custom (bin x, compute means, plot) | Used heavily in applied micro; no native implementation |
+| Histogram + KDE | `ax.hist` + `sp.gaussian_kde` | Distribution of variable |
+| CDF comparison | `ax.plot(sorted(x), np.arange(n)/n)` | Empirical CDFs |
+| Box plot | `ax.boxplot` / `pd.DataFrame.boxplot` | Distribution by group |
+| Heatmap / correlation matrix | `ax.matshow(corr)` + annotations | Visualise multicollinearity |
+
+### 7.4 Time-series / panel-specific
+
+| Plot | How to produce | Description |
+|---|---|---|
+| ACF / PACF | `sm.graphics.tsa.plot_acf(resid)` | Identify serial correlation |
+| Residuals over time | manual: `ax.plot(time_index, resid)` | Check for time patterns |
+| Panel spaghetti plot | manual: one line per entity | Raw within-entity variation |
+| Event study / DiD plot | custom: leads/lags coefficient plot | Parallel trends + dynamic effects |
+
+---
+
+## 8. TABLE GENERATION
+
+| Output type | Approach | Key library |
+|---|---|---|
+| Summary stats table | `pd.DataFrame.describe()` → format, or custom `describe_table(df, cols, stats=[...])` | pandas + custom |
+| Single regression table | custom `reg_table(result)` → LaTeX/text | our own renderer |
+| Multi-model table | custom `compare_table([res1, res2, ...])` → LaTeX/text | our own (like stargazer/modelsummary) |
+| Coefficient + SE + stars | custom formatting with `'*' if p<0.1 else ''` etc. | custom |
+| LaTeX export | custom render → `.tex` file | custom strings |
+| HTML export | custom render → `.html` file | custom strings |
+| CSV export | `pd.DataFrame.to_csv()` | pandas |
+| Diagnostic report table | custom `DiagnosticReport` collecting `TestResult` objects | custom |
+
+---
+
+## 9. WHAT WE MUST IMPLEMENT OURSELVES ("custom" gaps)
+
+These items are either missing from both libraries or too rough to use directly:
+
+| Gap | Plan |
+|---|---|
+| Bootstrap SEs (wild, pairs, cluster) | Custom utility using numpy random draws |
+| Binscatter | Custom: bin x into percentile bins, compute (mean_x, mean_y) per bin, plot + optionally add regression of bin means |
+| Hausman test (FE vs RE) | Custom: compare FE and RE coefficient vectors using joint covariance; formula: `H = (β_fe - β_re)' [Var(β_fe) - Var(β_re)]⁻¹ (β_fe - β_re)` ~ χ²(k) |
+| Chow structural break test | Custom: run restricted OLS and two unrestricted OLS, compute F from SSRs |
+| VIF table (all vars) | Custom loop: `variance_inflation_factor(X, i)` for each i → returns Series |
+| Multi-model comparison table | Custom renderer (replaces stargazer dependency) |
+| DiagnosticReport aggregator | Custom dataclass that holds list of `TestResult`, formats as table |
+| Tobit / censored regression | Requires custom MLE or use of `statsmodels.duration` (limited) |
+| Conley spatial SEs | Not in either library — custom or `pysal` |
+| Anderson-Rubin CI (weak instruments) | Custom — numerically invert AR test |
+
+---
+
+## 10. DEPENDENCY SUMMARY
+
+| Library | Role | Version pin |
+|---|---|---|
+| `statsmodels` | OLS, GLM, diagnostics, time-series plots | ≥0.14 |
+| `linearmodels` | Panel, IV, system, asset pricing | ≥7.0 |
+| `scipy` | Stand-alone hypothesis tests, distributions | ≥1.11 |
+| `pandas` | Data manipulation, MultiIndex | ≥2.0 |
+| `numpy` | Numerics | ≥1.25 |
+| `matplotlib` | All plots (Figure-returning functions) | ≥3.8 |
+| `patsy` / `formulaic` | Formula parsing for sm / custom models | `formulaic` preferred |
+| `pydantic` v2 | Tool schemas for agent layer | ≥2.0 |
+| `rich` | CLI pretty-printing | ≥13.0 |
+| `pyarrow` | Parquet I/O | ≥14.0 |
+
+---
+
+## 11. IMPLEMENTATION PRIORITY ORDER
+
+Based on frequency of use in Wooldridge + standard econometrics coursework:
+
+**Phase 1 (foundations):** OLS, WLS, HC0–HC3 SEs, Newey-West, F/t tests, Wald tests, basic fit metrics (R², adj-R², AIC, BIC), RESET, BP, White, JB, VIF, residual plots, Q-Q plot, coefficient forest plot.
+
+**Phase 2 (IV + panel basics):** IV2SLS (+ LIML), first-stage diagnostics, Sargan/Basmann, Wu-Hausman, FE/RE/Pooled OLS, clustered SEs, Driscoll-Kraay, F-poolability, within/between/overall R², multi-model table renderer.
+
+**Phase 3 (binary + extensions):** Probit, Logit, marginal effects, pseudo-R², influence/outlier full suite (Cook's D, DFFITS, DFBETAs), structural break tests, Hausman (custom), bootstrap SEs (custom), binscatter (custom), DiagnosticReport.
+
+**Phase 4 (system + asset pricing):** SUR, 3SLS, Fama-MacBeth, linear factor models, GMM-IV, AbsorbingLS.

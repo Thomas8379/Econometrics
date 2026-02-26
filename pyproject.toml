@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "econtools"
+version = "0.1.0"
+description = "Personal econometrics toolkit wrapping statsmodels, linearmodels, scipy, pandas"
+requires-python = ">=3.11"
+dependencies = [
+    "statsmodels>=0.14",
+    "linearmodels>=7.0",
+    "scipy>=1.11",
+    "pandas>=2.0",
+    "numpy>=1.25",
+    "pyarrow>=14.0",
+    "matplotlib>=3.8",
+    "pydantic>=2.0",
+    "rich>=13.0",
+    "formulaic>=0.6",
+    "patsy>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["econtools*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
