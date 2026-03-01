@@ -1,0 +1,1 @@
+, \quad X^T e = X^T (Y - X b^{\text{OLS}}) = \mathbf{0}_K.$

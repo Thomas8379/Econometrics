@@ -1,0 +1,49 @@
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{float}
+\begin{document}
+\section*{S7.3(E)}
+We augment the trend model with rainfall to see whether it reduces residual dependence. 
+Lag selection for Granger tests uses AIC with maxlags=4; selected lag = 1.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llrrrrl}
+\hline
+Series & Test & Stat & $p$ & df & Dist & Reject \\
+\hline
+wheat (level) & ADF & 0.216 & 0.973 & 4 & ADF & No \\
+wheat (level) & KPSS & 1.249 & 0.010 & 4 & KPSS & Yes \\
+wheat (level) & PP & 0.934 & 0.994 & 11 & PP & No \\
+wheat (diff) & ADF & -5.541 & 0.000 & 3 & ADF & Yes \\
+wheat (diff) & KPSS & 0.106 & 0.100 & 5 & KPSS & No \\
+wheat (diff) & PP & -13.712 & 0.000 & 11 & PP & Yes \\
+rain (level) & ADF & 0.115 & 0.967 & 7 & ADF & No \\
+rain (level) & KPSS & 0.981 & 0.010 & 3 & KPSS & Yes \\
+rain (level) & PP & -8.703 & 0.000 & 11 & PP & Yes \\
+rain (diff) & ADF & -3.199 & 0.020 & 8 & ADF & Yes \\
+rain (diff) & KPSS & 0.167 & 0.100 & 15 & KPSS & No \\
+rain (diff) & PP & -37.913 & 0.000 & 11 & PP & Yes \\
+\hline
+\end{tabular}
+\caption{Stationarity tests for wheat and rain in levels and first differences}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrrl}
+\hline
+Test & Stat & $p$ & df & Dist & Reject \\
+\hline
+Granger: rain $\rightarrow$ wheat & 16.010 & 0.000 & 1, 53 & F & Yes \\
+Granger: wheat $\rightarrow$ rain & 21.956 & 0.000 & 1, 53 & F & Yes \\
+Lead exogeneity (rain) & 0.129 & 0.721 & 1, 50 & F & No \\
+\hline
+\end{tabular}
+\caption{Exogeneity and Granger causality tests}
+\end{table}
+
+Trend + rain model residual diagnostics: $DW=0.766$; Ljung--Box $Q(4)=27.315$ with $p=0.000$. 
+If residual serial correlation persists, the inference and forecast intervals from (c) are understated; 
+a dynamic specification (e.g., AR errors, adding lagged wheat, or differencing) would be more appropriate.
+\end{document}

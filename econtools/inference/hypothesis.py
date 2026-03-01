@@ -2,36 +2,24 @@
 
 Public API
 ----------
-TestResult                  — frozen dataclass for test output
+TestResult                  — frozen dataclass for test output (from _core.types)
 wald_test(result, R, q, use_f) -> TestResult
 f_test(result, R, q)        -> TestResult
 t_test_coeff(result, var_name, value) -> TestResult
+lr_test(result_restricted, result_unrestricted) -> TestResult
+score_test(result_restricted, exog_extra) -> TestResult
 conf_int(result, alpha)     -> pd.DataFrame
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Union
 
 import numpy as np
 import pandas as pd
 import scipy.stats
 
-from econtools.models._results import RegressionResult
-
-
-@dataclass(frozen=True)
-class TestResult:
-    """Output of a single hypothesis test."""
-
-    test_name: str
-    statistic: float
-    pvalue: float
-    df: Union[tuple[float, float], float, None]
-    distribution: str
-    null_hypothesis: str
-    reject: bool
+from econtools._core.types import RegressionResult, TestResult  # noqa: F401
 
 
 def wald_test(
@@ -156,6 +144,55 @@ def t_test_coeff(
         distribution="t",
         null_hypothesis=f"β[{var_name}] = {value}",
         reject=pval < 0.05,
+    )
+
+
+def lr_test(
+    result_restricted: RegressionResult,
+    result_unrestricted: RegressionResult,
+) -> TestResult:
+    """Likelihood-ratio test for nested models."""
+    llf_r = float(result_restricted.fit.log_likelihood)
+    llf_ur = float(result_unrestricted.fit.log_likelihood)
+    stat = 2.0 * (llf_ur - llf_r)
+
+    df = int(len(result_unrestricted.params) - len(result_restricted.params))
+    if df <= 0:
+        raise ValueError("Unrestricted model must have more parameters than restricted model.")
+
+    pval = float(scipy.stats.chi2.sf(stat, df=df))
+    return TestResult(
+        test_name="LR test",
+        statistic=stat,
+        pvalue=pval,
+        df=float(df),
+        distribution="Chi2",
+        null_hypothesis="Restricted vs unrestricted",
+        reject=pval < 0.05,
+    )
+
+
+def score_test(
+    result_restricted: RegressionResult,
+    exog_extra: np.ndarray | pd.DataFrame,
+) -> TestResult:
+    """Score (LM) test for omitted variables using a restricted model."""
+    if not hasattr(result_restricted.raw, "score_test"):
+        raise ValueError("Underlying result does not support score_test().")
+
+    stat, pval, df = result_restricted.raw.score_test(exog_extra=exog_extra)
+    stat_f = float(np.squeeze(stat))
+    pval_f = float(np.squeeze(pval))
+    df_f = float(np.squeeze(df))
+
+    return TestResult(
+        test_name="Score (LM) test",
+        statistic=stat_f,
+        pvalue=pval_f,
+        df=df_f,
+        distribution="Chi2",
+        null_hypothesis="Extra regressors jointly zero",
+        reject=pval_f < 0.05,
     )
 
 

@@ -1,0 +1,16 @@
+id: breusch_pagan
+name: Breusch-Pagan Test
+category: heteroskedasticity
+definition: |
+  Auxiliary regression of squared OLS residuals $\hat{u}^2$ on regressors.
+  $\mathrm{LM} = nR^2_{\text{aux}} \xrightarrow{d} \chi^2(k-1)$
+  where $k$ is the number of regressors (including constant) and
+  $R^2_{\text{aux}}$ is from regressing $\hat{u}^2$ on {regressors}.
+hypotheses:
+  null: "Homoskedasticity: $\mathrm{Var}(u_i | x_i) = \sigma^2$"
+  alternative: "Variance depends on regressors: $\mathrm{Var}(u_i | x_i) = h(x_i)$"
+interpretation:
+  reject: "Evidence of heteroskedasticity — use robust SEs (HC0–HC3) or WLS."
+  fail_to_reject: "No evidence against homoskedasticity at the chosen significance level."
+references:
+  - "Breusch, T. S. & Pagan, A. R. (1979). A Simple Test for Heteroscedasticity and Random Coefficient Variation. Econometrica, 47(5), 1287–1294."

@@ -1,0 +1,70 @@
+\begin{longtable}{p{0.18\textwidth} r p{0.45\textwidth} r r}
+\toprule
+variable & dtype & label & missing & \% missing \\
+\midrule
+\endfirsthead
+\toprule
+variable & dtype & label & missing & \% missing \\
+\midrule
+\endhead
+county & int16 & county identifier & 0 & 0.00 \\
+year & int8 & 81 to 87 & 0 & 0.00 \\
+crmrte & float32 & crimes committed per person & 0 & 0.00 \\
+prbarr & float32 & 'probability' of arrest & 0 & 0.00 \\
+prbconv & float32 & 'probability' of conviction & 0 & 0.00 \\
+prbpris & float32 & 'probability' of prison sentenc & 0 & 0.00 \\
+avgsen & float32 & avg. sentence, days & 0 & 0.00 \\
+polpc & float32 & police per capita & 0 & 0.00 \\
+density & float32 & people per sq. mile & 0 & 0.00 \\
+taxpc & float32 & tax revenue per capita & 0 & 0.00 \\
+west & int8 & =1 if in western N.C. & 0 & 0.00 \\
+central & int8 & =1 if in central N.C. & 0 & 0.00 \\
+urban & int8 & =1 if in SMSA & 0 & 0.00 \\
+pctmin80 & float32 & perc. minority, 1980 & 0 & 0.00 \\
+wcon & float32 & weekly wage, construction & 0 & 0.00 \\
+wtuc & float32 & wkly wge, trns, util, commun & 0 & 0.00 \\
+wtrd & float32 & wkly wge, whlesle, retail trade & 0 & 0.00 \\
+wfir & float32 & wkly wge, fin, ins, real est & 0 & 0.00 \\
+wser & float32 & wkly wge, service industry & 0 & 0.00 \\
+wmfg & float32 & wkly wge, manufacturing & 0 & 0.00 \\
+wfed & float32 & wkly wge, fed employees & 0 & 0.00 \\
+wsta & float32 & wkly wge, state employees & 0 & 0.00 \\
+wloc & float32 & wkly wge, local gov emps & 0 & 0.00 \\
+mix & float32 & offense mix: face-to-face/other & 0 & 0.00 \\
+pctymle & float32 & percent young male & 0 & 0.00 \\
+d82 & int8 & =1 if year == 82 & 0 & 0.00 \\
+d83 & int8 & =1 if year == 83 & 0 & 0.00 \\
+d84 & int8 & =1 if year == 84 & 0 & 0.00 \\
+d85 & int8 & =1 if year == 85 & 0 & 0.00 \\
+d86 & int8 & =1 if year == 86 & 0 & 0.00 \\
+d87 & int8 & =1 if year == 87 & 0 & 0.00 \\
+lcrmrte & float32 & log(crmrte) & 0 & 0.00 \\
+lprbarr & float32 & log(prbarr) & 0 & 0.00 \\
+lprbconv & float32 & log(prbconv) & 0 & 0.00 \\
+lprbpris & float32 & log(prbpris) & 0 & 0.00 \\
+lavgsen & float32 & log(avgsen) & 0 & 0.00 \\
+lpolpc & float32 & log(polpc) & 0 & 0.00 \\
+ldensity & float32 & log(density) & 0 & 0.00 \\
+ltaxpc & float32 & log(taxpc) & 0 & 0.00 \\
+lwcon & float32 & log(wcon) & 0 & 0.00 \\
+lwtuc & float32 & log(wtuc) & 0 & 0.00 \\
+lwtrd & float32 & log(wtrd) & 0 & 0.00 \\
+lwfir & float32 & log(wfir) & 0 & 0.00 \\
+lwser & float32 & log(wser) & 0 & 0.00 \\
+lwmfg & float32 & log(wmfg) & 0 & 0.00 \\
+lwfed & float32 & log(wfed) & 0 & 0.00 \\
+lwsta & float32 & log(wsta) & 0 & 0.00 \\
+lwloc & float32 & log(wloc) & 0 & 0.00 \\
+lmix & float32 & log(mix) & 0 & 0.00 \\
+lpctymle & float32 & log(pctymle) & 0 & 0.00 \\
+lpctmin & float32 & log(pctmin) & 0 & 0.00 \\
+clcrmrte & float32 & lcrmrte - lcrmrte[\_n-1] & 90 & 14.29 \\
+clprbarr & float32 & lprbarr - lprbarr[\_n-1] & 90 & 14.29 \\
+clprbcon & float32 & lprbconv - lprbconv[\_n-1] & 90 & 14.29 \\
+clprbpri & float32 & lprbpri - lprbpri[t-1] & 90 & 14.29 \\
+clavgsen & float32 & lavgsen - lavgsen[t-1] & 90 & 14.29 \\
+clpolpc & float32 & lpolpc - lpolpc[t-1] & 90 & 14.29 \\
+cltaxpc & float32 & ltaxpc - ltaxpc[t-1] & 90 & 14.29 \\
+clmix & float32 & lmix - lmix[t-1] & 90 & 14.29 \\
+\bottomrule
+\end{longtable}

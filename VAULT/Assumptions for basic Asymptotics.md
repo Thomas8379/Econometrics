@@ -1,0 +1,4 @@
+---
+aliases:
+  - Asymptotic's Assumptions
+---

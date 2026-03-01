@@ -156,8 +156,11 @@ def load_dta(
         meta["data_label"] = reader.data_label
         meta["variable_labels"] = reader.variable_labels()
         meta["value_labels"] = reader.value_labels()
-        # stata_dtypes: map colname → Stata storage type string
-        meta["stata_dtypes"] = dict(zip(reader.varlist, reader.dtyplist))
+        # stata_dtypes: map colname → Stata storage type string (if available)
+        varlist = getattr(reader, "varlist", None)
+        dtyplist = getattr(reader, "dtyplist", None)
+        if varlist is not None and dtyplist is not None:
+            meta["stata_dtypes"] = dict(zip(varlist, dtyplist))
 
     if manifest_path is not None:
         manifest = _load_manifest(manifest_path)

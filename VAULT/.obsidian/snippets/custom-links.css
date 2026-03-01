@@ -1,0 +1,16 @@
+/* Remove underline and make links bold */
+a,
+.internal-link,
+.external-link,
+.cm-hmd-internal-link,
+.cm-underline {
+  text-decoration: none !important;
+  font-weight: 700 !important;
+}
+
+/* Also remove underline on hover */
+a:hover,
+.internal-link:hover,
+.external-link:hover {
+  text-decoration: none !important;
+}

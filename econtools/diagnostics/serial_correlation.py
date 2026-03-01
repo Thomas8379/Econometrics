@@ -1,0 +1,141 @@
+"""Serial correlation tests for residuals.
+
+Public API
+----------
+box_pierce_q(result, lags) -> TestResult
+ljung_box_q(result, lags)  -> TestResult
+box_pierce_from_autocorr(acf, n_obs, lags) -> TestResult
+ljung_box_from_autocorr(acf, n_obs, lags)  -> TestResult
+"""
+
+from __future__ import annotations
+
+from typing import Iterable, Sequence
+
+import numpy as np
+import scipy.stats
+from statsmodels.stats.diagnostic import acorr_ljungbox
+from statsmodels.tsa.stattools import acf as _acf
+
+from econtools.inference.hypothesis import TestResult
+from econtools.models._results import RegressionResult
+
+
+def box_pierce_q(result: RegressionResult, *, lags: int) -> TestResult:
+    """Box-Pierce Q-statistic test for residual autocorrelation.
+
+    H0: no serial correlation up to lag m.
+    """
+    _validate_lags(lags)
+    lbq, _lb_p, bpq, bp_p = acorr_ljungbox(
+        result.resid, lags=[lags], boxpierce=True, return_df=False
+    )
+    return TestResult(
+        test_name="Box-Pierce Q",
+        statistic=float(bpq[-1]),
+        pvalue=float(bp_p[-1]),
+        df=float(lags),
+        distribution="Chi2",
+        null_hypothesis=f"No serial correlation up to lag {lags}",
+        reject=float(bp_p[-1]) < 0.05,
+    )
+
+
+def ljung_box_q(result: RegressionResult, *, lags: int) -> TestResult:
+    """Ljung-Box Q-statistic test for residual autocorrelation.
+
+    H0: no serial correlation up to lag m.
+    """
+    _validate_lags(lags)
+    lbq, lb_p = acorr_ljungbox(result.resid, lags=[lags], return_df=False)
+    return TestResult(
+        test_name="Ljung-Box Q",
+        statistic=float(lbq[-1]),
+        pvalue=float(lb_p[-1]),
+        df=float(lags),
+        distribution="Chi2",
+        null_hypothesis=f"No serial correlation up to lag {lags}",
+        reject=float(lb_p[-1]) < 0.05,
+    )
+
+
+def box_pierce_from_autocorr(
+    autocorr: Sequence[float] | np.ndarray,
+    n_obs: int,
+    *,
+    lags: int | None = None,
+) -> TestResult:
+    """Box-Pierce Q-statistic from provided autocorrelations."""
+    acf = _prepare_autocorr(autocorr, lags)
+    _validate_n_obs(n_obs, len(acf))
+    q = float(n_obs * np.sum(acf**2))
+    df = float(len(acf))
+    pval = float(scipy.stats.chi2.sf(q, df=df))
+    return TestResult(
+        test_name="Box-Pierce Q",
+        statistic=q,
+        pvalue=pval,
+        df=df,
+        distribution="Chi2",
+        null_hypothesis=f"No serial correlation up to lag {int(df)}",
+        reject=pval < 0.05,
+    )
+
+
+def ljung_box_from_autocorr(
+    autocorr: Sequence[float] | np.ndarray,
+    n_obs: int,
+    *,
+    lags: int | None = None,
+) -> TestResult:
+    """Ljung-Box Q-statistic from provided autocorrelations."""
+    acf = _prepare_autocorr(autocorr, lags)
+    _validate_n_obs(n_obs, len(acf))
+    lag_idx = np.arange(1, len(acf) + 1, dtype=float)
+    q = float(
+        n_obs * (n_obs + 2.0) * np.sum(acf**2 / (n_obs - lag_idx))
+    )
+    df = float(len(acf))
+    pval = float(scipy.stats.chi2.sf(q, df=df))
+    return TestResult(
+        test_name="Ljung-Box Q",
+        statistic=q,
+        pvalue=pval,
+        df=df,
+        distribution="Chi2",
+        null_hypothesis=f"No serial correlation up to lag {int(df)}",
+        reject=pval < 0.05,
+    )
+
+
+def autocorr_from_series(series: Iterable[float], *, lags: int) -> np.ndarray:
+    """Compute sample autocorrelations for lag 1..m."""
+    _validate_lags(lags)
+    vals = np.asarray(list(series), dtype=float)
+    acf_vals = _acf(vals, nlags=lags, fft=False)
+    return acf_vals[1 : lags + 1]
+
+
+def _prepare_autocorr(
+    autocorr: Sequence[float] | np.ndarray,
+    lags: int | None,
+) -> np.ndarray:
+    acf = np.asarray(autocorr, dtype=float).ravel()
+    if acf.size == 0:
+        raise ValueError("autocorr must have at least one value.")
+    if lags is not None:
+        _validate_lags(lags)
+        if lags > acf.size:
+            raise ValueError("lags exceeds available autocorrelations.")
+        acf = acf[:lags]
+    return acf
+
+
+def _validate_lags(lags: int) -> None:
+    if lags <= 0:
+        raise ValueError("lags must be a positive integer.")
+
+
+def _validate_n_obs(n_obs: int, lags: int) -> None:
+    if n_obs <= lags:
+        raise ValueError("n_obs must exceed the number of lags.")

@@ -21,6 +21,9 @@ dependencies = [
     "patsy>=1.0",
 ]
 
+[project.scripts]
+econ = "econtools.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
@@ -34,3 +37,6 @@ include = ["econtools*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v"
+markers = [
+    "phase3: tests for Phase 3 features (binary models, influence suite, bootstrap)",
+]

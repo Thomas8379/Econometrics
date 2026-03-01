@@ -1,0 +1,13 @@
+Style guides
+
+Econometrics Society Journals
+
+Quantitative Econometrics (QE)
+https://github.com/vtex-soft/texsupport.econometricsociety-qe
+
+Theoretical Econometrics (TE)
+https://github.com/vtex-soft/texsupport.econometricsociety-te
+
+Econometrica (ECTA)
+https://github.com/vtex-soft/texsupport.econometricsociety-ecta
+

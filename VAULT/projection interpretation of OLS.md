@@ -1,0 +1,1 @@
+ (which follows too from the [[definition of OLS estimation]] and the [[projector theorem]]) 

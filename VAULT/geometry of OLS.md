@@ -1,0 +1,1 @@
+$$\mathbf{y}^{\prime} \mathbf{y} = \mathbf{y}^{\prime} \mathbf{P}^{\prime} \mathbf{P y}+\mathbf{y}^{\prime} \mathbf{M}^{\prime} \mathbf{M y} = \hat{\mathbf{y}}^{\prime} \mathbf{y}+\mathbf{e}^{\prime} \mathbf{e}$$

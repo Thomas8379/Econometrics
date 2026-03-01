@@ -1,0 +1,137 @@
+
+
+
+DATA
+
+  ↓
+
+MODEL (statistical structure)
+
+  ↓
+
+ESTIMATOR (how parameters are computed)
+
+  ↓
+
+SAMPLING DISTRIBUTION (variance + asymptotics)
+
+  ↓
+
+INFERENCE (SEs, CIs, tests)
+
+  ↓
+
+DIAGNOSTICS (assumption checks)
+
+  ↓
+
+EVALUATION (fit + predictive performance)
+
+  ↓
+
+DECISION / INTERPRETATION (economic meaning)
+
+
+MODEL
+  ├── Structural Assumptions
+  ├── Identification
+  └── Functional Form
+
+ESTIMATOR
+  ├── Closed-form
+  ├── Likelihood
+  ├── Moments
+  └── Penalized
+
+ASYMPTOTICS
+  ├── IID
+  ├── Cluster
+  ├── Time-series
+  └── Panel
+
+VARIANCE ESTIMATOR
+  ├── Classical
+  ├── HC (robust)
+  ├── Clustered
+  ├── HAC
+  └── Bootstrap
+
+INFERENCE
+  ├── SE
+  ├── CI
+  └── Tests
+
+DIAGNOSTICS
+  ├── Residual
+  ├── Influence
+  └── Specification
+
+EVALUATION
+  ├── Fit metrics
+  └── Predictive metrics
+
+SO linearmodels has
+docs:https://bashtage.github.io/linearmodels/ for linearmodels 7.0
+
+Estimation and inference in some common linear models that are missing from statsmodels:
+
+Panel Data Models
+
+Fixed Effects (PanelOLS)
+
+Random Effects (RandomEffects)
+
+First Difference (FirstDifferenceOLS)
+
+Between Estimation (BetweenOLS)
+
+Pooled OLS (PooledOLS)
+
+Fama-MacBeth Estimation (FamaMacBeth)
+
+High-dimensional Regression
+
+Absorbing Least Squares (AbsorbingLS)
+
+Single equation Instrumental Variables (IV) models
+
+Two-stage least squares (2SLS, IV2SLS)
+
+Limited Information ML (LIML, IVLIML)
+
+Generalized Method of Moments (GMM, IVGMM)
+
+Continuously Updating GMM (CUE-GMM, IVGMMCUE)
+
+System Regression Estimators
+
+Seemingly Unrelated Regression (SUR, SUR)
+
+Three-stage Least Squares (3SLS, IV3SLS)
+
+Generalized Method of Moments System Estimator (GMM, IVSystemGMM)
+
+Asset Pricing Model Estimation and Testing
+
+Linear Factor Model (2-step, for traded or non-traded factors) (LinearFactorModel)
+
+Linear Factor Model (GMM, for traded or non-traded factors) (LinearFactorModelGMM)
+
+Linear factor model (1-step SUR, only for traded factors) (TradedFactorModel)
+
+linearmodels¶
+Instrumental Variable Estimation
+Panel Data Model Estimation
+Linear Factor Models for Asset Pricing
+System Regression Models
+Utilities
+Compatibility
+Type Aliases
+Module Plans
+Contributing
+Change Log
+References
+Indices¶
+Index
+
+Module Index

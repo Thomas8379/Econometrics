@@ -1,0 +1,1 @@
+$$\operatorname{Var}(b^{\text{OLS}} \mid X) = (X^T X)^{-1} X^T \Sigma X (X^T X)^{-1} = \frac{1}{n^2} S_{xx}^{-1} X^T \Sigma X S_{xx}^{-1}.$$

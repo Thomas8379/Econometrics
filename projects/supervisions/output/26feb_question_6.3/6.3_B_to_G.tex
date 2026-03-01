@@ -1,0 +1,119 @@
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{float}
+\begin{document}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{0.9}
+\section*{6.3 (B)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.20\textwidth} >{\raggedleft\arraybackslash}r >{\raggedright\arraybackslash}p{0.45\textwidth} >{\raggedleft\arraybackslash}r >{\raggedleft\arraybackslash}r}
+\toprule
+variable & dtype & label & missing & \% missing \\
+\midrule
+hhsize & float32 & household size & 0 & 0.00 \\
+povrat & float32 & income to needs ratio & 628 & 8.07 \\
+bmi & float32 & own body mass index (wt for height measure) & 1456 & 18.70 \\
+ageyrs & int8 & age in years & 0 & 0.00 \\
+female & int8 & =1 if female & 0 & 0.00 \\
+white & int8 & =1 if white & 0 & 0.00 \\
+black & int8 & =1 if black & 0 & 0.00 \\
+hisp & int8 & =1 if hispanic & 0 & 0.00 \\
+other & int8 & =1 if other race & 0 & 0.00 \\
+tvyest & float64 & \# hours of TV watched yesterday & 1435 & 18.43 \\
+dadbmi & float32 & dad's body mass index & 1256 & 16.13 \\
+mombmi & float32 & mom's body mass index & 617 & 7.93 \\
+dadobese & float64 & =1 if dad obese & 1256 & 16.13 \\
+dadovwt & float64 & =1 if dad overweight & 1256 & 16.13 \\
+momobese & float64 & =1 if mom obese & 617 & 7.93 \\
+momovwt & float64 & =1 if mom overweight & 617 & 7.93 \\
+ovwtc & float64 & =1 if overweight & 1456 & 18.70 \\
+obesec & float64 & =1 if obese & 1456 & 18.70 \\
+pctcal & float32 & calories consumed/2000 & 530 & 6.81 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\clearpage
+\section*{6.3 (C)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.24\textwidth} >{\raggedleft\arraybackslash}r >{\raggedleft\arraybackslash}r >{\raggedleft\arraybackslash}r >{\raggedleft\arraybackslash}r >{\raggedleft\arraybackslash}r}
+\toprule
+variable & N & mean & sd & min & max \\
+\midrule
+obesec & 6329 & 0.1343 & 0.3410 & 0.0000 & 1.0000 \\
+ageyrs & 7785 & 9.4145 & 3.3664 & 5.0000 & 16.0000 \\
+female & 7785 & 0.5070 & 0.5000 & 0.0000 & 1.0000 \\
+white & 7785 & 0.3188 & 0.4660 & 0.0000 & 1.0000 \\
+black & 7785 & 0.3105 & 0.4627 & 0.0000 & 1.0000 \\
+hisp & 7785 & 0.3166 & 0.4652 & 0.0000 & 1.0000 \\
+tvyest & 6350 & 3.1411 & 1.8018 & 0.0000 & 6.0000 \\
+povrat & 7157 & 1.7303 & 1.3162 & 0.0000 & 7.5170 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\clearpage
+\section*{6.3 (D)}
+
+\renewcommand{\arraystretch}{1.1}
+\setlength{\tabcolsep}{6pt}
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrr}
+\hline
+Variable & Coef & Std Err & $t$ & $p$ \\
+\hline
+const & -1.560$^{\ast\ast\ast}$ & 0.131 & -11.917 & 0.000 \\
+ & $(0.131)$ & & & \\
+ageyrs & 0.008 & 0.006 & 1.267 & 0.205 \\
+ & $(0.006)$ & & & \\
+female & 0.030 & 0.042 & 0.706 & 0.480 \\
+ & $(0.042)$ & & & \\
+white & 0.024 & 0.116 & 0.204 & 0.838 \\
+ & $(0.116)$ & & & \\
+black & 0.204$^{\ast}$ & 0.112 & 1.828 & 0.068 \\
+ & $(0.112)$ & & & \\
+hisp & 0.261$^{\ast\ast}$ & 0.112 & 2.340 & 0.019 \\
+ & $(0.112)$ & & & \\
+tvyest & 0.057$^{\ast\ast\ast}$ & 0.012 & 4.789 & 0.000 \\
+ & $(0.012)$ & & & \\
+povrat & 0.002 & 0.018 & 0.108 & 0.914 \\
+ & $(0.018)$ & & & \\
+\hline
+$N$ & 5770 & & & \\
+Pseudo $R^2$ & 0.012 & & & \\
+Log-likelihood & -2234.689 & & & \\
+LR stat & 53.341 & & & \\
+LR p-value & 0.000 & & & \\
+AIC & 4485.379 & & & \\
+BIC & 4538.662 & & & \\
+\hline
+\end{tabular}
+\end{table}
+\vspace{2pt}
+\begin{flushleft}\footnotesize{* $p<0.1$, ** $p<0.05$, *** $p<0.01$}\end{flushleft}
+
+\clearpage
+\section*{6.3 (E)}
+
+﻿\noindent In the Probit model, the coefficient on \texttt{hisp} is positive and statistically significant (\(p=0.019\)), so Hispanic children have a higher latent propensity to be obese, holding other covariates fixed. The average marginal effect is about \(0.055\) (SE \(0.024\), \(p=0.019\)), implying roughly a 5.5 percentage-point higher probability of obesity on average.
+
+\clearpage
+\section*{6.3 (F)}
+
+﻿\noindent Using the fitted Probit model, the predicted probability of obesity for a 16-year-old female white child who watched 3 hours of TV yesterday with income-to-needs ratio 4.56 is \(\hat{p}=0.114\) (about 11.4\%).
+
+\clearpage
+\section*{6.3 (G)}
+
+﻿\noindent If the same child watched no TV yesterday, the predicted probability falls to \(\hat{p}=0.084\) (8.4\%). The drop is \(\Delta \hat{p}=0.0295\) (2.95 percentage points). Using a delta-method test for the difference gives SE \(0.0062\), \(z=4.78\), and \(p\approx1.8\times10^{-6}\), so the fall is statistically significant.
+
+\end{document}

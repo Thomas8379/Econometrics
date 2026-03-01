@@ -6,10 +6,24 @@ from econtools.plots.residual_plots import (
     plot_qq,
 )
 from econtools.plots.coefficient_plots import plot_coef_forest
+from econtools.plots.time_series import (
+    plot_time_series,
+    plot_correlogram,
+    plot_distribution,
+    plot_series_with_trend,
+    plot_residual_diagnostics,
+    plot_series_with_trends,
+)
 
 __all__ = [
     "plot_residuals_vs_fitted",
     "plot_scale_location",
     "plot_qq",
     "plot_coef_forest",
+    "plot_time_series",
+    "plot_correlogram",
+    "plot_distribution",
+    "plot_series_with_trend",
+    "plot_residual_diagnostics",
+    "plot_series_with_trends",
 ]

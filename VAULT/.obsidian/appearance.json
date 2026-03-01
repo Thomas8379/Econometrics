@@ -1,0 +1,7 @@
+{
+  "theme": "moonstone",
+  "enabledCssSnippets": [
+    "custom-links"
+  ],
+  "accentColor": "#4f4dff"
+}

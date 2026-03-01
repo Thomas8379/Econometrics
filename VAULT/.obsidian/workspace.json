@@ -1,0 +1,220 @@
+{
+  "main": {
+    "id": "c82bab0c32d78175",
+    "type": "split",
+    "children": [
+      {
+        "id": "f9c39f29ffe2da96",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "2cf75149c6a1fe3a",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Multilinear Regression.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Multilinear Regression"
+            }
+          },
+          {
+            "id": "c1d56efdaee4ef9e",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Law of total variance.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Law of total variance"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "a82a3cb112f571b1",
+    "type": "split",
+    "children": [
+      {
+        "id": "ae4020330925e692",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "2b9a274853989695",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "c158000d6d590aa8",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "b2a305f92cf6fede",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 200
+  },
+  "right": {
+    "id": "c96b58d6a74c1a16",
+    "type": "split",
+    "children": [
+      {
+        "id": "12e1b0331af29308",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "a54b45d3bd782f04",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "A1.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "f0381926e8665b7a",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "A1.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "6dec8e703c96ed3d",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "853b1887c8a5ebdd",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "ec8f570f0b123ff8",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Multilinear Regression.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Multilinear Regression"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "2cf75149c6a1fe3a",
+  "lastOpenFiles": [
+    "NOTE HERE 1THIS COULD BE CLEANER BUT THE EXACT RELATIONSHIP IS UNCLEAR TO ME.md",
+    "Multilinear Regression.md",
+    "Fumio Hayashi-Econometrics-Princeton University Press (2000) (1).pdf",
+    "Unconfirmed 751408.crdownload",
+    "Law of total variance.md",
+    "Pasted image 20260301153510.png",
+    "Coefficient of Determination as Squared Correlation.md",
+    "geometry of OLS.md",
+    "ANOVA decomposition.md",
+    "Interpreting OLS.md",
+    "OLS normal equations.md",
+    "Frisch-Waugh-Lovell Theorem.md",
+    "FWL.md",
+    "partialed out.md",
+    "1234123123.md",
+    "A1.md",
+    "A2.md"
+  ]
+}

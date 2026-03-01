@@ -1,0 +1,23 @@
+\renewcommand{\arraystretch}{1.1}
+\setlength{\tabcolsep}{6pt}
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrrl}
+\hline
+\multicolumn{6}{l}{\textit{IV vs OLS}} \\
+\hline
+Test & Stat & $p$ & df & Dist & Reject \\
+\hline
+Wu-Hausman & 0.376 & 0.540 & 1 & F & No \\
+\multicolumn{6}{l}{\footnotesize{H0: Regressors are exogenous (OLS consistent)}} \\
+Sargan & nan & nan & 1 & Chi2 & No \\
+\multicolumn{6}{l}{\footnotesize{H0: Overidentifying restrictions are valid}} \\
+Basmann & nan & nan & 1 & Chi2 & No \\
+\multicolumn{6}{l}{\footnotesize{H0: Overidentifying restrictions are valid}} \\
+Basmann F & nan & nan & 1 & F & No \\
+\multicolumn{6}{l}{\footnotesize{H0: Overidentifying restrictions are valid}} \\
+Weak instr. F (polpc) & 8.704 & 0.003 & 1, 625 & F & Yes \\
+\multicolumn{6}{l}{\footnotesize{H0: Instruments are irrelevant}} \\
+\hline
+\end{tabular}
+\end{table}

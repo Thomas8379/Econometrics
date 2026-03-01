@@ -1,0 +1,103 @@
+\renewcommand{\arraystretch}{1.1}
+\setlength{\tabcolsep}{6pt}
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrr}
+\hline
+Variable & Coef & Std Err & $t$ & $p$ \\
+\hline
+const & -1.560$^{\ast\ast\ast}$ & 0.131 & -11.917 & 0.000 \\
+ & $(0.131)$ & & & \\
+ageyrs & 0.008 & 0.006 & 1.267 & 0.205 \\
+ & $(0.006)$ & & & \\
+female & 0.030 & 0.042 & 0.706 & 0.480 \\
+ & $(0.042)$ & & & \\
+white & 0.024 & 0.116 & 0.204 & 0.838 \\
+ & $(0.116)$ & & & \\
+black & 0.204$^{\ast}$ & 0.112 & 1.828 & 0.068 \\
+ & $(0.112)$ & & & \\
+hisp & 0.261$^{\ast\ast}$ & 0.112 & 2.340 & 0.019 \\
+ & $(0.112)$ & & & \\
+tvyest & 0.057$^{\ast\ast\ast}$ & 0.012 & 4.789 & 0.000 \\
+ & $(0.012)$ & & & \\
+povrat & 0.002 & 0.018 & 0.108 & 0.914 \\
+ & $(0.018)$ & & & \\
+\hline
+$N$ & 5770 & & & \\
+Pseudo $R^2$ (McFadden) & 0.012 & & & \\
+Corr$^2(y,\hat p)$ & 0.009 & & & \\
+Efron $R^2$ & 0.009 & & & \\
+AUC & 0.582 & & & \\
+Log-likelihood & -2234.689 & & & \\
+LR stat & 53.341 & & & \\
+LR p-value & 0.000 & & & \\
+AIC & 4485.379 & & & \\
+BIC & 4538.662 & & & \\
+Brier score & 0.114 & & & \\
+\% correct (c=0.5) & 86.707 & & & \\
+Balanced acc (c=0.5) & 50.000 & & & \\
+\% correct ($c=\bar{y}$) & 52.288 & & & \\
+\% correct (c* match $\bar{y}$) & 78.267 & & & \\
+c* (match $\bar{y}$) & 0.172 & & & \\
+\hline
+\end{tabular}
+\end{table}
+\vspace{4pt}
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+Classification (c=0.5) & TP & TN & FP & FN \\
+\midrule
+Counts & 0 & 5003 & 0 & 767 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+Rate & TPR & TNR & PPV & NPV \\
+\midrule
+Value & 0.000 & 1.000 & nan & 0.867 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+Classification (c* match $\bar{y}$) & TP & TN & FP & FN \\
+\midrule
+Counts & 140 & 4376 & 627 & 627 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+Rate (c* match $\bar{y}$) & TPR & TNR & PPV & NPV \\
+\midrule
+Value & 0.183 & 0.875 & 0.183 & 0.875 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrrrr}
+\toprule
+Variable & AME & SE & $p$ & MEM & SE & $p$ \\
+\midrule
+ageyrs & 0.002 & 0.001 & 0.205 & 0.002 & 0.001 & 0.205 \\
+female & 0.006 & 0.009 & 0.480 & 0.006 & 0.009 & 0.480 \\
+white & 0.005 & 0.025 & 0.839 & 0.005 & 0.025 & 0.839 \\
+black & 0.045 & 0.025 & 0.077 & 0.045 & 0.025 & 0.077 \\
+hisp & 0.058 & 0.026 & 0.025 & 0.058 & 0.026 & 0.025 \\
+tvyest & 0.012 & 0.003 & 0.000 & 0.012 & 0.002 & 0.000 \\
+povrat & 0.000 & 0.004 & 0.914 & 0.000 & 0.004 & 0.914 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\vspace{2pt}
+\begin{flushleft}\footnotesize{* $p<0.1$, ** $p<0.05$, *** $p<0.01$}\end{flushleft}

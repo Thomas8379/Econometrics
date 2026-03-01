@@ -1,0 +1,31 @@
+\renewcommand{\arraystretch}{1.1}
+\setlength{\tabcolsep}{6pt}
+\begin{table}[H]
+\centering
+\begin{tabular}{lrr}
+\hline
+\multicolumn{3}{l}{\textit{IV vs OLS}} \\
+\hline
+Variable & OLS & 2SLS \\
+\hline
+const & 0.030$^{\ast\ast\ast}$ & 0.029$^{\ast\ast\ast}$ \\
+ & $(0.001)$ & $(0.003)$ \\
+west & -0.015$^{\ast\ast\ast}$ & -0.015$^{\ast\ast\ast}$ \\
+ & $(0.001)$ & $(0.002)$ \\
+central & -0.002$^{\ast}$ & -0.002 \\
+ & $(0.001)$ & $(0.001)$ \\
+urban & 0.034$^{\ast\ast\ast}$ & 0.034$^{\ast\ast\ast}$ \\
+ & $(0.002)$ & $(0.002)$ \\
+polpc & 1.291$^{\ast\ast\ast}$ & 2.315 \\
+ & $(0.196)$ & $(1.710)$ \\
+\hline
+$N$ & 630 & 630 \\
+$R^2$ & 0.454 & 0.430 \\
+Adj.\ $R^2$ & 0.451 & 0.427 \\
+$F$-stat & 130.017 & 462.291 \\
+RMSE & 0.013 & 0.014 \\
+\hline
+\end{tabular}
+\end{table}
+\vspace{2pt}
+\begin{flushleft}\footnotesize{* $p<0.1$, ** $p<0.05$, *** $p<0.01$}\end{flushleft}

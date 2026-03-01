@@ -9,7 +9,21 @@ Personal econometrics workspace for coursework, supervisions, and independent re
 ```
 Econometrics/
 ├── README.md
+├── CLAUDE.md                  # project rules for Claude Code
+├── pyproject.toml             # econtools package definition
 ├── .gitignore
+│
+├── econtools/                 # Python econometrics toolkit (see below)
+│
+├── tests/                     # pytest suite (164 tests)
+│   ├── data/
+│   ├── models/
+│   ├── inference/
+│   ├── diagnostics/
+│   ├── plots/
+│   ├── tables/
+│   ├── fit/                   # tests for fit_model() dispatcher
+│   └── validation/            # numerical validation against Wooldridge datasets
 │
 ├── data_lake/
 │   ├── raw/
@@ -21,11 +35,103 @@ Econometrics/
 ├── projects/                      # self-contained analysis projects
 │   └── <project-name>/
 │       ├── README.md
-│       ├── data/                  # symlinks or refs into data_lake/
 │       └── notebooks/
 │
-└── Supervisions/                  # supervision work (existing)
-    └── <supervision-N>/
+├── scripts/
+│   └── collect_todos.py           # grep codebase for TODO(econtools) by category
+│
+└── Supervisions/                  # supervision work
+```
+
+---
+
+## econtools Package
+
+A Python econometrics toolkit. Install in editable mode:
+
+```bash
+pip install -e .
+```
+
+### Quick start
+
+```python
+from econtools.fit import fit_model
+from econtools.model.spec import ModelSpec
+
+spec = ModelSpec(dep_var="lwage", exog_vars=["educ", "exper"], estimator="ols")
+result = fit_model(spec, df)
+
+print(result.params)
+print(result.fit.r_squared)
+```
+
+### Package layout
+
+```
+econtools/
+├── _core/              # Shared internals
+│   ├── types.py        # Estimate, FitMetrics, TestResult
+│   ├── formatting.py   # _star, _fmt, _latex_star, _latex_escape
+│   └── cov_mapping.py  # Unified SE-type resolver (statsmodels + linearmodels)
+│
+├── model/
+│   └── spec.py         # ModelSpec — declarative model specification
+│
+├── fit/                # Estimation layer
+│   └── estimators.py   # fit_model(spec, df) → Estimate
+│
+├── evaluation/         # Statistical tests and diagnostics
+│   ├── hypothesis.py       # wald_test, f_test, t_test_coeff, conf_int
+│   ├── heteroskedasticity.py  # breusch_pagan, white_test
+│   ├── normality.py        # jarque_bera
+│   ├── specification.py    # reset_test
+│   ├── multicollinearity.py   # compute_vif, condition_number
+│   ├── serial_correlation.py  # durbin_watson, breusch_godfrey, ljung_box
+│   ├── stationarity.py     # adf_test, kpss_test
+│   ├── iv_checks.py        # wu_hausman, sargan_test, weak_iv_f
+│   └── panel_checks.py     # hausman_test, bp_lm_test
+│
+├── output/             # Reporting — no statistical logic
+│   ├── tables/         # reg_table, compare_table, TableContent repr
+│   ├── latex/          # Journal profiles (ECONOMETRICA, AER), document assembly
+│   └── knowledge_base/ # YAML entries: OLS, IV, BP test, Hausman, etc.
+│
+├── uncertainty/        # Variance estimation
+│   └── cov_estimators.py  # HC0–HC3, HAC, cluster, kernel
+│
+├── data/               # Data pipeline (Phase 0)
+│   ├── io.py           # load_dta, save_curated, verify_hash
+│   ├── inspect.py      # summarise, dtypes, missing
+│   ├── clean.py        # drop_missing, winsorise, standardise
+│   ├── transform.py    # log, lag, diff, interact
+│   ├── construct.py    # dummies, polynomials, date features
+│   └── provenance.py   # log_step, load_log
+│
+└── cli/                # Command-line interface
+```
+
+### Supported estimators
+
+| `estimator=` | Backend | Notes |
+|---|---|---|
+| `"ols"` | statsmodels | Ordinary least squares |
+| `"wls"` | statsmodels | Weighted least squares; requires `weights_col` |
+| `"2sls"` | linearmodels | IV-2SLS; requires `endog_vars` + `instruments` |
+| `"fe"` | linearmodels | Fixed effects panel; requires `entity_col` + `time_col` |
+| `"re"` | linearmodels | Random effects panel |
+| `"fd"` | linearmodels | First-difference panel |
+
+### Supported SE types (`cov_type=`)
+
+`"classical"`, `"HC0"`, `"HC1"`, `"HC2"`, `"HC3"`, `"HAC"` / `"newey_west"`, `"cluster"`
+
+### Running tests
+
+```bash
+python -m pytest tests/ -v                    # all tests (164 passing)
+python -m pytest tests/ -v -m "not phase3"   # exclude Phase 3 stubs
+python -m pytest tests/validation/ -v        # Wooldridge numerical validation
 ```
 
 ---
