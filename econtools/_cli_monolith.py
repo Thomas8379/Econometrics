@@ -1147,6 +1147,10 @@ def build_parser() -> argparse.ArgumentParser:
     texpdf.add_argument("--no-open", action="store_true", help="Do not open PDF after compiling")
     texpdf.set_defaults(func=cmd_texpdf)
 
+    # bootstrap subcommand
+    from econtools.cli.commands.bootstrap_cli import add_bootstrap_parser
+    add_bootstrap_parser(sub)
+
     return parser
 
 

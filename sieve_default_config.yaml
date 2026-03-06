@@ -1,0 +1,139 @@
+# ============================================================
+# econtools sieve — annotated default configuration
+# ============================================================
+# Usage:
+#   econtools sieve --config sieve_default_config.yaml
+#
+# Reproducibility guarantee:
+#   same data + same config + same seed => identical results
+
+# ---- Target specification ----------------------------------------
+target:
+  y: "log_wage"              # Dependent variable column name
+  base_X:                    # Baseline exogenous regressors
+    - "educ"
+    - "exper"
+  estimator: "ols"           # "ols" | "2sls" | "fe_ols" | "fe_2sls"
+  endog: null                # For IV: list of endogenous variable names
+  base_Z: null               # For IV: list of baseline instrument names
+  intercept: true            # Whether to include a constant
+
+# ---- Data specification ------------------------------------------
+data:
+  path: null                 # Path to .parquet / .csv / .dta file
+  filters: {}                # Column-value pairs for subsetting: {col: val}
+  id_col: null               # Panel entity identifier
+  time_col: null             # Time variable (required for lag instruments)
+  cluster_col: null          # Cluster variable for grouped splits
+  cov_type: "HC3"            # Default covariance type for candidates
+  cluster_var: null          # If cov_type="cluster": the cluster column name
+
+# ---- Feature generators (X-side) ---------------------------------
+generators:
+  features:
+    polynomial:
+      enabled: false
+      degree: 2              # Maximum polynomial degree
+      vars: null             # null = apply to all base_X
+      orthogonalize: false
+
+    interactions:
+      enabled: false
+      max_order: 2           # Currently only order 2 is supported
+      vars_a: null           # null = all base_X
+      vars_b: null           # null = all base_X
+      whitelist: null        # [[var_a, var_b], ...] — only these pairs
+      blacklist: null        # [[var_a, var_b], ...] — exclude these pairs
+
+    log:
+      enabled: false
+      vars: null             # null = apply to all base_X
+      shift: 0.0             # Added before log() (to handle zeros)
+
+    log1p:
+      enabled: false
+      vars: null
+
+    splines:
+      enabled: false
+      n_knots: 4             # Number of knots (>= 3)
+      vars: []               # List of variables to spline
+
+    # Complexity limits
+    max_added_blocks: 3      # Maximum number of generator blocks combined
+    max_terms_total: null    # Hard limit on total X terms per candidate
+
+  # ---- Instrument generators (Z-side, IV only) -------------------
+  instruments:
+    lags:
+      enabled: false
+      lag_ks: [1, 2]         # Lag orders to generate
+      vars: null             # null = apply to base_Z
+      time_col: null         # Required if lags enabled
+      id_col: null
+
+    z_polynomial:
+      enabled: false
+      degree: 2              # Polynomial degree for instrument expansions
+
+    z_interactions:
+      enabled: false
+      exog_vars: null        # null = use base_X
+
+    group_means:
+      enabled: false
+      vars: null
+      group_col: null        # Required: column defining groups
+
+    loo_group_means:
+      enabled: false         # Preferred over group_means (avoids reflection bias)
+      vars: null
+      group_col: null
+
+# ---- Evaluation protocol ----------------------------------------
+# Default is "holdout" — honest by default.
+# Set allow_in_sample_selection: true ONLY for pure exploration.
+protocol:
+  mode: "holdout"            # "holdout" | "cv" | "crossfit"
+  k: 5                       # Folds for cv / crossfit
+  test_frac: 0.30            # Hold-out fraction for holdout mode
+  grouped_by: null           # Column for grouped splitting (prevents leakage)
+  allow_in_sample_selection: false  # TRUE stamps output as EXPLORATORY ONLY
+
+# ---- Scoring ----------------------------------------------------
+scoring:
+  primary_metric: "rmse"     # Metric to rank candidates by
+  # OLS metrics: "mse", "rmse", "mae", "r_squared", "aic", "bic"
+  # IV metrics: "first_stage_f", "overid_pvalue"
+  # Stability: "coef_cv_mean", "primary_sign_stable"
+
+# ---- Constraints (hard filters) ---------------------------------
+constraints:
+  min_first_stage_f: 10.0    # IV: reject candidates with F below this
+  max_terms: null            # Reject candidates with more X terms than this
+  max_instruments: null      # Reject candidates with more instruments than this
+  collinearity_policy: "warn"  # "warn" | "reject" (reserved for future use)
+  sign_constraints: {}       # {var_name: "positive" | "negative"}
+
+# ---- Selection --------------------------------------------------
+selection:
+  primary_metric: "rmse"     # Must match scoring.primary_metric
+  higher_is_better: false    # true for R², first_stage_f; false for RMSE, AIC
+  top_k: 5                   # Number of candidates to select
+
+  # Pareto frontier selection (alternative to top_k)
+  pareto: false
+  pareto_objectives: ["rmse", "n_terms"]
+  pareto_higher_is_better: [false, false]
+
+# ---- Output & artifacts -----------------------------------------
+output:
+  path: "./sieve_output"     # Root output directory
+  save_draws: false          # Save bootstrap coefficient draws per candidate
+  verbosity: 1               # 0=quiet, 1=normal, 2=verbose
+
+# ---- Reproducibility --------------------------------------------
+reproducibility:
+  seed: 12345
+  n_jobs: 1                  # >1 requires joblib; identical results guaranteed
+  deterministic_parallel: true

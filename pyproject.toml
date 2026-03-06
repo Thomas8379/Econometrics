@@ -39,4 +39,5 @@ testpaths = ["tests"]
 addopts = "-v"
 markers = [
     "phase3: tests for Phase 3 features (binary models, influence suite, bootstrap)",
+    "slow: simulation-based tests that take longer to run (skip with -m 'not slow')",
 ]

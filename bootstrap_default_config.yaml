@@ -1,0 +1,129 @@
+# Bootstrap configuration for econtools
+# ======================================
+# Run with: econtools bootstrap --config path/to/this_file.yaml
+#
+# Required fields are marked [REQUIRED].
+# All other fields have defaults listed here.
+#
+# Copy this file, fill in the required fields, and adjust defaults as needed.
+
+# -----------------------------------------------------------------------
+# Data
+# -----------------------------------------------------------------------
+
+# [REQUIRED] Path to input data file.
+# Supported formats: .dta (Stata), .csv, .parquet
+data_path: null   # e.g. "data_lake/raw/wooldridge_and_oleg/wage1.dta"
+
+# [REQUIRED] Dependent variable column name.
+y: null           # e.g. "lwage"
+
+# [REQUIRED] Exogenous regressor column names (list).
+# A constant term is added automatically unless add_intercept: false
+# or a constant column is already present.
+X: []             # e.g. ["educ", "exper", "tenure"]
+
+# Endogenous regressor column names (list). Required for estimator: "2sls".
+endog: []         # e.g. ["educ"]
+
+# Excluded instrument column names (list). Required for estimator: "2sls".
+Z: []             # e.g. ["fatheduc", "motheduc"]
+
+# -----------------------------------------------------------------------
+# Estimator
+# -----------------------------------------------------------------------
+
+# Estimator to use.
+# Options: "ols" | "2sls"
+estimator: "ols"
+
+# -----------------------------------------------------------------------
+# Bootstrap settings
+# -----------------------------------------------------------------------
+
+# Bootstrap method.
+# Options:
+#   "iid_pairs"        — i.i.d. pairs bootstrap (resample rows). Default
+#                        for cross-section data.
+#   "wild"             — wild bootstrap with Rademacher or Mammen weights.
+#                        Recommended for heteroskedastic cross-section.
+#   "cluster_pairs"    — cluster pairs bootstrap (resample clusters with
+#                        replacement). Requires cluster column.
+#   "panel_cluster_id" — panel bootstrap: resample entity ids, keep full
+#                        within-id histories. Default for panel data when
+#                        id_col is provided.
+bootstrap_method: "iid_pairs"
+
+# Number of bootstrap replications.
+# 1999 is recommended for 5% tests (Davidson & MacKinnon 2000).
+B: 1999
+
+# Random seed for reproducibility. All randomness is derived from this seed
+# via numpy SeedSequence, so results are byte-for-byte identical across runs.
+seed: 12345
+
+# Whether to add a constant intercept term to X.
+# Set to false if X already contains a constant or you want no intercept.
+add_intercept: true
+
+# -----------------------------------------------------------------------
+# Grouping columns (for cluster and panel methods)
+# -----------------------------------------------------------------------
+
+# Cluster identifier column (required for bootstrap_method: "cluster_pairs").
+cluster: null     # e.g. "state"
+
+# Entity identifier column (required for bootstrap_method: "panel_cluster_id").
+id_col: null      # e.g. "person_id"
+
+# Time identifier column (optional; used to sort within-id in panel bootstrap).
+time_col: null    # e.g. "year"
+
+# -----------------------------------------------------------------------
+# Confidence intervals
+# -----------------------------------------------------------------------
+
+# Confidence level.
+ci_level: 0.95
+
+# CI methods to compute.
+# Options: "percentile" | "basic"  (BCa and studentized are not yet implemented)
+ci_methods:
+  - percentile
+  - basic
+
+# -----------------------------------------------------------------------
+# Wild bootstrap distribution
+# -----------------------------------------------------------------------
+
+# Auxiliary distribution for wild bootstrap weights.
+# "rademacher" — ±1 with probability 0.5. Recommended for most cases.
+# "mammen"     — two-point Mammen (1993) distribution.
+wild_dist: "rademacher"
+
+# -----------------------------------------------------------------------
+# Output
+# -----------------------------------------------------------------------
+
+# Path for manifest JSON (reproducibility record).
+manifest_path: "manifest.json"
+
+# Path for CSV results table. Set to null to skip.
+output_csv: null  # e.g. "results/bootstrap_results.csv"
+
+# Path for LaTeX results table. Set to null to skip.
+output_latex: null  # e.g. "results/bootstrap_results.tex"
+
+# Path to save the full (B × k) draws array as a .npy file.
+# Set to null to not save draws to disk.
+save_draws_path: null  # e.g. "results/bootstrap_draws.npy"
+
+# -----------------------------------------------------------------------
+# Computation
+# -----------------------------------------------------------------------
+
+# Number of parallel threads for bootstrap replications.
+# n_jobs=1 (default): sequential execution.
+# n_jobs>1: parallel via ThreadPoolExecutor. Results are identical
+#            to sequential execution due to per-draw RNG seeding.
+n_jobs: 1
