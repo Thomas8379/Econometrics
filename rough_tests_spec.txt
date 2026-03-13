@@ -1,0 +1,804 @@
+# Econtools Validation Test Suite — Specification
+
+**Status:** Draft  
+**Scope:** `tests/validation/` directory  
+**Purpose:** End-to-end numerical validation of every estimator, SE type, diagnostic, and inference procedure in econtools, against external ground-truth sources with certified or published expected values.
+
+---
+
+## 1. Guiding Principles
+
+A validation test is distinct from a unit test. It asserts not that code runs, but that the **numerical result is correct** to a specified tolerance against an independent reference. Each test must specify:
+
+- **Data source** — where the data comes from and how to obtain it
+- **Model specification** — exact formula, estimator, and options
+- **Reference source** — the textbook, paper, or standard that certifies the expected values
+- **Expected values** — coefficients, standard errors, test statistics, p-values, fit metrics
+- **Tolerance** — absolute (`atol`) or relative (`rtol`) precision required
+- **Skip condition** — graceful skip if data is absent (use `@require_dta` or equivalent)
+
+All validation tests live in `tests/validation/`. They are excluded from CI by default and run locally against the data lake. They must never import from each other or share mutable state.
+
+---
+
+## 2. Source Hierarchy
+
+Ground-truth references ranked by authority:
+
+| Tier | Source | Use Case |
+|------|--------|----------|
+| 1 | NIST StRD (certified to 15 sig. fig.) | OLS numerical precision |
+| 2 | Textbook worked examples (Wooldridge, Greene, Cameron & Trivedi) | Coefficients, R², F-stats |
+| 3 | statsmodels / linearmodels internal test results | SE types, panel estimators, IV |
+| 4 | R cross-validation (AER, plm, sandwich, ivreg) | HAC, cluster SEs, panel |
+| 5 | Monte Carlo DGPs with known parameters | Bootstrap, finite-sample properties |
+
+---
+
+## 3. Test Registry
+
+Each entry below maps to one or more test functions. Format:
+
+```
+test_id          → tests/validation/<file>.py::test_<name>
+data_source      → dataset name and location
+reference        → publication and table/equation number
+model            → estimator + formula
+expected         → key quantities to assert
+tolerance        → atol unless noted
+```
+
+---
+
+### 3.1 OLS — Numerical Precision (NIST StRD)
+
+**File:** `tests/validation/test_nist_ols.py`  
+**Data:** Downloaded from `https://www.itl.nist.gov/div898/strd/lls/lls.shtml`; embed inline as NumPy arrays (no file dependency).  
+**Reference:** NIST StRD certified values, accurate to 15 significant digits.
+
+NIST provides 11 linear regression datasets at three difficulty levels. All should pass. The challenging ones (Longley, Filip, Wampler series) specifically stress-test numerical conditioning.
+
+#### 3.1.1 Norris (Lower — simple linear)
+
+```yaml
+test_id: nist_norris
+model: "y ~ x"  (N=36, p=2)
+expected_beta: [−0.262323073774029, 1.00211681802045]
+expected_se:   [0.232818234301152, 0.000429796848199937]
+expected_r2:   0.999993745883712
+expected_f:    4255954.13232369
+tolerance: 1e-8 (absolute on coefficients)
+```
+
+#### 3.1.2 Pontius (Lower — quadratic)
+
+```yaml
+test_id: nist_pontius
+model: "y ~ x + x²"  (N=40, p=3)
+expected_beta: [0.673565789473684e-3, 0.732059160401003e-6, −0.316081871345029e-14]
+expected_r2:   0.999999900178537
+tolerance: 1e-8
+```
+
+#### 3.1.3 Longley (Higher — multicollinear, the canonical stress test)
+
+```yaml
+test_id: nist_longley
+model: "y ~ x1 + x2 + x3 + x4 + x5 + x6"  (N=16, p=7)
+expected_beta: [−3482258.63459582, 15.0618722713733, −0.358191792925910e-1,
+                −2.02022980381683, −1.03322686717359, −0.511041056535807e-1,
+                1829.15146461355]
+expected_se:   [890420.383607373, 84.9149257747669, 0.334910077722432e-1,
+                0.488399681651699, 0.214274163161675, 0.226073200069370,
+                455.478499142212]
+expected_r2:   0.995479004577296
+tolerance: 1e-6  # relaxed — conditioning makes exact match harder
+note: "Longley (1967). Failure here indicates numerical instability in QR decomposition."
+```
+
+#### 3.1.4 Filip (Higher — degree-10 polynomial, near-singular)
+
+```yaml
+test_id: nist_filip
+model: "y ~ x + x² + ... + x¹⁰"  (N=82, p=11)
+tolerance: 1e-5  # very ill-conditioned; even good software struggles here
+note: "Use as a red-flag test, not a hard pass/fail."
+```
+
+#### 3.1.5 Wampler Series (Higher — generated, extreme conditioning)
+
+```yaml
+test_ids: nist_wampler1 through nist_wampler5
+model: quadratic or cubic polynomials on generated data
+note: "Wampler1–5 test a spectrum of conditioning from moderate to extreme.
+       All five should pass atol=1e-6 for a correctly implemented QR solver."
+```
+
+**Implementation note:** Embed NIST data directly as module-level NumPy arrays. These are small (N ≤ 82) and have no file dependency. See `statsmodels/regression/tests/test_nist.py` for reference implementation to adapt.
+
+---
+
+### 3.2 OLS — Textbook Coefficients (Wooldridge)
+
+**File:** `tests/validation/test_ols_wooldridge.py` (already partially implemented)  
+**Data:** `data_lake/raw/wooldridge_and_oleg/*.dta`
+
+#### 3.2.1 wage1 — log(wage) regression (existing)
+
+```yaml
+test_id: wooldridge_wage1_ols
+dataset: wage1.dta (N=526)
+model: "lwage ~ educ + exper + tenure"  (+const)
+reference: Wooldridge (2010) Table 6.1
+expected_beta: {educ: 0.0920, exper: 0.0041, tenure: 0.0221, const: 0.2844}
+expected_r2:   ~0.316
+tolerance: 0.001
+```
+
+#### 3.2.2 bwght — birth weight (multiple OLS, heteroskedasticity example)
+
+```yaml
+test_id: wooldridge_bwght_ols
+dataset: bwght.dta (N=1388)
+model: "bwght ~ cigs + faminc + cigtax + cigprice + fatheduc + motheduc"
+reference: Wooldridge (2010) Chapter 4 / 8
+expected: coefficients from Stata output (verify against Stata do-file in package)
+note: "Also validate HC3 vs classical SE comparison."
+```
+
+#### 3.2.3 gpa1 — GPA with attendance (collinearity example)
+
+```yaml
+test_id: wooldridge_gpa1_vif
+dataset: gpa1.dta
+model: "colGPA ~ hsGPA + ACT + skipped"
+reference: Wooldridge Chapter 3
+assertion: VIFs are all < 10 (low collinearity dataset)
+```
+
+#### 3.2.4 hprice1 — house prices (log-linear, specification tests)
+
+```yaml
+test_id: wooldridge_hprice1_reset
+dataset: hprice1.dta
+model: "lprice ~ lnox + log(dist) + rooms + stratio"
+reference: Wooldridge Chapter 9
+assertions:
+  - RESET test F-stat ≈ published value
+  - BP test detects heteroskedasticity (p < 0.05)
+  - White test also significant
+```
+
+#### 3.2.5 wage2 — wages with IQ proxy (omitted variable illustration)
+
+```yaml
+test_id: wooldridge_wage2_ols
+dataset: wage2.dta (N=935)
+model: "lwage ~ educ + exper + tenure + married + black + south + urban"
+reference: Wooldridge Chapter 9
+note: "Add IQ and verify coefficient on educ changes as expected."
+```
+
+---
+
+### 3.3 WLS Validation
+
+**File:** `tests/validation/test_wls_wooldridge.py`
+
+#### 3.3.1 smoke — cigarette demand (WLS vs OLS comparison)
+
+```yaml
+test_id: wooldridge_smoke_wls
+dataset: smoke.dta
+model: WLS with weights=income; dep_var=cigs
+reference: Wooldridge Chapter 8 WLS example
+assertions:
+  - WLS educ coef ≠ OLS educ coef (demonstrate efficiency gain)
+  - WLS SE < OLS SE for key regressors under correct heteroskedasticity model
+```
+
+---
+
+### 3.4 IV / 2SLS Validation
+
+**File:** `tests/validation/test_iv_wooldridge.py` (already partially implemented)
+
+#### 3.4.1 mroz — education instrumented by parental education (existing)
+
+```yaml
+test_id: wooldridge_mroz_iv
+dataset: mroz.dta (N=428 working women)
+endog: educ
+instruments: fatheduc, motheduc
+exog: exper (+const)
+reference: Wooldridge Chapter 15
+expected_beta_educ: ~0.0664
+expected_ols_educ:  ~0.1086  (for comparison)
+tolerance: 0.005
+```
+
+#### 3.4.2 mroz — weak instrument test
+
+```yaml
+test_id: wooldridge_mroz_weak_iv
+assertion: First-stage F-stat on (fatheduc, motheduc) > 10 threshold
+           (Staiger-Stock rule-of-thumb)
+note: "With just fatheduc as single instrument, F should be borderline."
+```
+
+#### 3.4.3 card — Card (1995) college proximity IV
+
+```yaml
+test_id: card_proximity_iv
+dataset: card.dta (Wooldridge has this; also in AER R package)
+dep_var: lwage
+endog: educ
+instrument: nearc4 (proximity to 4-year college)
+exog: exper, expersq, black, smsa, south, smsa66, reg662–reg669
+reference: Card (1995) Journal of Political Economy; Wooldridge Chapter 15
+expected_beta_educ_iv:  ~0.132  (vs OLS ~0.075)
+assertions:
+  - Wu-Hausman test rejects exogeneity of educ (p < 0.05)
+  - Sargan test not available (just-identified)
+tolerance: 0.01
+```
+
+#### 3.4.4 Over-identified IV — Sargan test
+
+```yaml
+test_id: mroz_overid_sargan
+specification: mroz with instruments [fatheduc, motheduc, huseduc]
+               (over-identified: 3 instruments, 1 endogenous)
+assertions:
+  - Sargan statistic is chi²(2) under H0
+  - p-value > 0.05 (instruments are valid — Wooldridge result)
+reference: Wooldridge Chapter 15
+```
+
+---
+
+### 3.5 Panel Data Validation
+
+**File:** `tests/validation/test_panel_wooldridge.py`
+
+#### 3.5.1 wagepan — union wage premium, FE vs RE
+
+```yaml
+test_id: wooldridge_wagepan_fe
+dataset: wagepan.dta (N=4360 obs, 545 individuals, 8 years)
+entity_col: nr, time_col: year
+model: "lwage ~ educ + black + hisp + exper + expersq + married + union + d81–d87"
+reference: Wooldridge (2010) Chapter 14, Table 14.2
+estimator: fe
+expected_beta_union: ~0.0800  (FE estimate)
+expected_beta_union_re: ~0.1057  (RE estimate — larger)
+tolerance: 0.005
+```
+
+#### 3.5.2 wagepan — Hausman test (FE vs RE)
+
+```yaml
+test_id: wooldridge_wagepan_hausman
+assertion: Hausman statistic rejects RE in favour of FE (p < 0.05)
+           (union and exper are correlated with individual effects)
+reference: Wooldridge Chapter 14
+```
+
+#### 3.5.3 jtrain — job training, first differences
+
+```yaml
+test_id: wooldridge_jtrain_fd
+dataset: jtrain.dta
+entity_col: fcode, time_col: year
+model: FD estimator on scrap ~ grant + grant_1
+reference: Wooldridge Chapter 13
+note: "FD removes time-constant heterogeneity; compare to pooled OLS."
+```
+
+#### 3.5.4 Breusch-Pagan LM test for random effects
+
+```yaml
+test_id: wooldridge_wagepan_bplm
+assertion: BP-LM statistic is large and significant (individual effects present)
+reference: Wooldridge Chapter 14; linearmodels documentation
+```
+
+---
+
+### 3.6 Standard Error Validation (HC and HAC)
+
+**File:** `tests/validation/test_se_types.py`  
+**Strategy:** Run same OLS regression with different SE types; validate each against R `sandwich` package or statsmodels internal results.
+
+#### 3.6.1 HC0–HC3 sandwich SEs
+
+```yaml
+test_id: hc_se_comparison
+dataset: wage1.dta
+model: "lwage ~ educ + exper + tenure"
+reference: MacKinnon & White (1985); statsmodels test results
+assertions:
+  - HC0 SE = sqrt(diag(X'X)⁻¹ X' diag(ê²) X (X'X)⁻¹)
+  - HC1 = HC0 * n/(n-k) correction
+  - HC2 < HC3 for all coefficients (HC3 is conservative)
+  - Classical SE ≠ HC3 SE (heteroskedasticity present from BP test)
+cross_check: R lm() with vcovHC(type="HC3") on same data
+tolerance: 1e-6
+```
+
+#### 3.6.2 Newey-West HAC SEs
+
+```yaml
+test_id: hac_se_validation
+dataset: use a time-series dataset; suggest phillips.dta or intdef.dta (Wooldridge TSA chapters)
+model: OLS with Newey-West SE (automatic bandwidth or lags=4)
+reference: Newey & West (1987); statsmodels HAC implementation
+assertions:
+  - HAC SE ≥ classical SE for coefficients on serially correlated regressors
+  - NW SE matches statsmodels result to 1e-6
+cross_check: R sandwich::NeweyWest() on same data
+```
+
+#### 3.6.3 Clustered SEs
+
+```yaml
+test_id: clustered_se_validation
+dataset: wagepan.dta  (cluster by individual nr)
+model: pooled OLS with cluster-robust SEs
+reference: Cameron & Miller (2015) "A Practitioner's Guide to Cluster-Robust Inference"
+assertions:
+  - Cluster SE > HC3 SE (more variation captured)
+  - SE ratio (cluster/classical) consistent with within-cluster correlation
+cross_check: R lm_robust() or plm() with cluster=nr
+tolerance: 1e-5
+```
+
+---
+
+### 3.7 Diagnostic Tests Validation
+
+**File:** `tests/validation/test_diagnostics_wooldridge.py`
+
+#### 3.7.1 Breusch-Pagan test
+
+```yaml
+test_id: bp_test_validation
+dataset: hprice1.dta
+model: "lprice ~ lnox + rooms + stratio"
+reference: Wooldridge Chapter 8; Breusch & Pagan (1979)
+assertions:
+  - BP statistic matches Stata hettest result (published in Wooldridge)
+  - p-value < 0.01 (strong heteroskedasticity)
+tolerance: 0.1 on statistic (LM tests are asymptotic; small differences expected)
+```
+
+#### 3.7.2 White test
+
+```yaml
+test_id: white_test_validation
+dataset: hprice1.dta (same as above)
+reference: White (1980); statsmodels het_white
+assertions:
+  - White statistic > BP statistic (White is less restrictive)
+  - Both reject H0 of homoskedasticity
+```
+
+#### 3.7.3 RESET test
+
+```yaml
+test_id: reset_test_validation
+dataset: hprice1.dta
+model: "lprice ~ lnox + rooms + stratio"  (correct spec)
+comparison_model: "price ~ nox + rooms + stratio"  (wrong functional form)
+reference: Ramsey (1969); Wooldridge Chapter 9
+assertions:
+  - RESET F-stat on correct log-log spec: fail to reject (p > 0.10)
+  - RESET F-stat on levels spec: reject (p < 0.05) — misspecification detected
+```
+
+#### 3.7.4 Jarque-Bera normality test
+
+```yaml
+test_id: jb_normality_validation
+dataset: wage1.dta residuals from lwage regression
+reference: Jarque & Bera (1987)
+assertions:
+  - JB statistic = n/6 * (S² + K²/4) where S=skewness, K=excess kurtosis
+  - Computed JB matches scipy.stats.jarque_bera to 1e-8
+  - Large sample: JB ~ chi²(2)
+```
+
+#### 3.7.5 Durbin-Watson
+
+```yaml
+test_id: durbin_watson_validation
+dataset: phillips.dta or intdef.dta (Wooldridge time-series chapters)
+model: OLS in levels (expected to show serial correlation)
+reference: Durbin & Watson (1950); Wooldridge TSA chapters
+assertions:
+  - DW statistic ≈ 2*(1 - ρ̂) where ρ̂ is first-order autocorrelation of residuals
+  - DW significantly < 2 for inflation-unemployment levels regression
+```
+
+#### 3.7.6 Breusch-Godfrey LM test
+
+```yaml
+test_id: bg_test_validation
+dataset: phillips.dta
+model: OLS; test for AR(1) and AR(2) errors
+reference: Breusch (1978), Godfrey (1978); Wooldridge Chapter 12
+assertions:
+  - BG(1) rejects no-serial-correlation in levels model
+  - BG(1) fails to reject in first-difference model (corrected spec)
+```
+
+#### 3.7.7 VIF / Condition Number
+
+```yaml
+test_id: vif_validation
+dataset: gpa1.dta (low collinearity); longley_nist (extreme collinearity)
+assertions:
+  - gpa1 all VIFs < 5
+  - Longley data: max VIF >> 100, condition number >> 1000
+  - Condition number matches numpy.linalg.cond(X) to 1e-6
+```
+
+---
+
+### 3.8 Hypothesis Test Validation
+
+**File:** `tests/validation/test_inference_validation.py`
+
+#### 3.8.1 F-test for joint significance
+
+```yaml
+test_id: f_test_joint_validation
+dataset: wage1.dta
+model: "lwage ~ educ + exper + tenure"
+H0: exper = tenure = 0 (jointly)
+reference: Wooldridge Chapter 4
+assertions:
+  - F-statistic matches statsmodels f_test result
+  - p-value consistent with chi²/k approximation
+  - Reject H0 (both are jointly significant)
+```
+
+#### 3.8.2 Wald test equivalence to F-test
+
+```yaml
+test_id: wald_f_equivalence
+assertion: wald_test(use_f=True) == f_test() exactly (same function, different API)
+           wald_test(use_f=False) = k * F-stat  (chi² = k * F for scalar restrictions)
+```
+
+#### 3.8.3 t-test coefficient
+
+```yaml
+test_id: t_test_coefficient_validation
+dataset: wage1.dta
+assertion:
+  - t-stat for educ ≈ coef/se ≈ 0.0920/0.0073 ≈ 12.6
+  - Two-sided p-value < 0.001
+  - Confidence interval excludes zero
+reference: Wooldridge Table 6.1
+```
+
+#### 3.8.4 LR test (restricted vs unrestricted)
+
+```yaml
+test_id: lr_test_validation
+dataset: mroz.dta (probit model)
+models: probit(inlf ~ nwifeinc + educ + exper + expersq + age + kidslt6 + kidsge6)
+        vs restricted: probit(inlf ~ nwifeinc + educ)
+reference: Wooldridge Chapter 17
+assertion: LR = 2*(ll_u - ll_r) ~ chi²(df=5); strong rejection
+```
+
+---
+
+### 3.9 Binary Models Validation (Phase 3)
+
+**File:** `tests/validation/test_binary_models.py`  
+**Marker:** `@pytest.mark.phase3`
+
+#### 3.9.1 Probit — Wooldridge mroz
+
+```yaml
+test_id: wooldridge_mroz_probit
+dataset: mroz.dta (N=753 all women)
+dep_var: inlf (binary: in labour force)
+model: "inlf ~ nwifeinc + educ + exper + expersq + age + kidslt6 + kidsge6"
+reference: Wooldridge (2010) Table 17.1
+expected_beta: {nwifeinc: −0.0120, educ: 0.1309, exper: 0.1233,
+                expersq: −0.00189, age: −0.0529, kidslt6: −0.8683,
+                kidsge6: 0.0360}
+tolerance: 0.005
+assertions:
+  - Log-likelihood ≈ −401.30
+  - LR chi² ≈ 227.14
+  - Pseudo-R² ≈ 0.22
+```
+
+#### 3.9.2 Marginal effects at the mean
+
+```yaml
+test_id: probit_marginal_effects
+reference: Wooldridge Chapter 17
+assertions:
+  - AME for educ ≈ 0.0452 (from published table)
+  - AME for kidslt6 ≈ −0.297
+tolerance: 0.01
+```
+
+---
+
+### 3.10 Monte Carlo / Synthetic DGP Tests
+
+**File:** `tests/validation/test_montecarlo.py`  
+**Purpose:** Verify that estimators converge to true population parameters as N grows. No data file dependency.
+
+#### 3.10.1 OLS consistency
+
+```yaml
+test_id: mc_ols_consistency
+DGP: y = 2 + 3*x1 - 1.5*x2 + ε, ε ~ N(0,1), x ~ N(0,1), N=10000, seed=42
+assertions:
+  - |β̂₁ - 3.0| < 0.05
+  - |β̂₂ - (-1.5)| < 0.05
+  - |β̂₀ - 2.0| < 0.05
+```
+
+#### 3.10.2 HC3 coverage
+
+```yaml
+test_id: mc_hc3_coverage
+DGP: heteroskedastic errors — Var(εᵢ) = σ² * xᵢ², N=1000, 500 replications, seed=0
+assertion: 95% CI based on HC3 SE covers true β at rate 0.93–0.97
+           (classical SE coverage should be below 0.90)
+note: "This is a Monte Carlo coverage test, not a single-run assertion."
+```
+
+#### 3.10.3 2SLS consistency with endogeneity
+
+```yaml
+test_id: mc_2sls_consistency
+DGP: triangular system:
+       x = π*z + v,  v ~ N(0,1),  z ~ N(0,1),  π = 1.0
+       y = β*x + ε,  ε = 0.8*v + η,  η ~ N(0,0.36)  (endogeneity: corr(x,ε) ≠ 0)
+     N=5000, true β=2.0, seed=42
+assertions:
+  - OLS β̂ > 2.0 (upward bias from endogeneity)
+  - 2SLS β̂ ≈ 2.0 (|bias| < 0.1)
+  - Wu-Hausman test rejects exogeneity of x (p < 0.01)
+```
+
+#### 3.10.4 Clustered SE simulation
+
+```yaml
+test_id: mc_cluster_coverage
+DGP: within-cluster correlated errors, G=50 clusters of n=20, cluster RE
+assertion: Coverage of clustered SE CI ≈ 0.95; HC3 coverage < 0.90
+reference: Cameron & Miller (2015)
+```
+
+#### 3.10.5 Bootstrap SE accuracy
+
+```yaml
+test_id: mc_bootstrap_se
+DGP: same as mc_ols_consistency, N=200
+assertion: Bootstrap SE (B=999) within 10% of analytic HC3 SE
+note: "Phase 3 — marks as phase3 until bootstrap is implemented"
+```
+
+---
+
+### 3.11 Cross-Library Parity Tests (R benchmarks)
+
+**File:** `tests/validation/test_r_parity.py`  
+**Purpose:** Lock in results that match R reference implementations. Expected values are hardcoded from verified R sessions. No R runtime required.
+
+#### 3.11.1 Newey-West SE vs R `sandwich::NeweyWest`
+
+```yaml
+test_id: r_parity_neweywest
+dataset: intdef.dta or phillips.dta
+model: OLS on inflation ~ unemployment (in levels)
+r_reference: "sandwich::NeweyWest(lm(inf ~ unem, data=df), lag=4, prewhite=FALSE)"
+expected_se_unem: [hardcode from R session]
+tolerance: 1e-5
+note: "Bandwidth/kernel choices must match — document in test docstring."
+```
+
+#### 3.11.2 Two-way clustered SEs vs R `lfe::felm`
+
+```yaml
+test_id: r_parity_twoway_cluster
+dataset: wagepan.dta
+model: FE on lwage ~ union, cluster by (nr, year)
+r_reference: "felm(lwage ~ union | nr | 0 | nr + year, data=wagepan)"
+tolerance: 1e-4
+status: deferred — implement when two-way cluster is added to econtools
+```
+
+#### 3.11.3 IV-2SLS vs R `ivreg`
+
+```yaml
+test_id: r_parity_ivreg_mroz
+model: same as wooldridge_mroz_iv
+r_reference: "ivreg(lwage ~ educ + exper | fatheduc + motheduc + exper, data=mroz_working)"
+tolerance: 1e-6 (IV results should match exactly across implementations)
+```
+
+---
+
+### 3.12 Wooldridge Dataset Coverage Matrix
+
+Tracking which Wooldridge datasets are used and for what.
+
+| Dataset | Chapter | What it validates |
+|---------|---------|-------------------|
+| wage1 | 3, 6 | OLS coefficients, R², heteroskedasticity |
+| mroz | 15, 17 | IV-2SLS, Wu-Hausman, Sargan, Probit |
+| hprice1 | 8, 9 | RESET, BP test, White test |
+| wagepan | 14 | FE, RE, Hausman, clustered SEs, BG-LM |
+| gpa1 | 3 | VIF, low collinearity |
+| bwght | 4, 8 | Multiple OLS, WLS |
+| smoke | 8 | WLS efficiency |
+| wage2 | 9 | Proxy variable, omitted variable |
+| card | 15 | Proximity IV, Card (1995) replication |
+| jtrain | 13 | First-difference panel |
+| phillips | 11, 12 | Durbin-Watson, Breusch-Godfrey, HAC |
+| intdef | 11 | Time-series OLS, Newey-West SEs |
+
+**Suggested additions not yet in use:**
+
+| Dataset | Chapter | Use case |
+|---------|---------|----------|
+| crime1 | 7 | Interaction terms, hypothesis tests |
+| meap93 | 4 | F-tests for joint significance |
+| kielmc | 8 | Spatial heteroskedasticity |
+| fertil3 | 18 | Distributed lag models |
+| hseinv | 18 | Dynamic models, unit root pre-testing |
+
+---
+
+## 4. Test File Structure
+
+```
+tests/validation/
+├── conftest.py                    # dta_path(), require_dta(), embed_nist_data()
+├── test_nist_ols.py               # §3.1 — NIST StRD (no file dependency)
+├── test_ols_wooldridge.py         # §3.2 — OLS textbook results
+├── test_wls_wooldridge.py         # §3.3 — WLS
+├── test_iv_wooldridge.py          # §3.4 — IV / 2SLS
+├── test_panel_wooldridge.py       # §3.5 — FE, RE, FD, Hausman, BG-LM
+├── test_se_types.py               # §3.6 — HC0–HC3, HAC, cluster
+├── test_diagnostics_wooldridge.py # §3.7 — BP, White, RESET, JB, DW, BG, VIF
+├── test_inference_validation.py   # §3.8 — F, Wald, t, LR
+├── test_binary_models.py          # §3.9 — Probit, marginal effects [phase3]
+├── test_montecarlo.py             # §3.10 — DGP simulation tests
+└── test_r_parity.py               # §3.11 — hardcoded R cross-checks
+```
+
+---
+
+## 5. YAML Test Registry Format
+
+Each test should have a corresponding entry in `tests/validation/registry.yaml` for programmatic inspection:
+
+```yaml
+- test_id: nist_longley
+  file: test_nist_ols.py
+  function: test_nist_longley
+  data_source: NIST StRD (embedded)
+  estimator: ols
+  reference: "Longley (1967) JASA; NIST StRD certified values"
+  expected_keys: [beta, se, r2, f_stat]
+  tolerance: {atol: 1e-6}
+  requires_data: false
+  markers: []
+
+- test_id: wooldridge_mroz_iv
+  file: test_iv_wooldridge.py
+  function: test_mroz_iv_2sls_educ
+  data_source: mroz.dta
+  estimator: iv2sls
+  reference: "Wooldridge (2010) Chapter 15"
+  expected_keys: [beta_educ, nobs]
+  tolerance: {atol: 0.005}
+  requires_data: true
+  markers: []
+
+- test_id: wooldridge_mroz_probit
+  file: test_binary_models.py
+  function: test_mroz_probit
+  data_source: mroz.dta
+  estimator: probit
+  reference: "Wooldridge (2010) Table 17.1"
+  expected_keys: [beta, log_likelihood, pseudo_r2]
+  tolerance: {atol: 0.005}
+  requires_data: true
+  markers: [phase3]
+```
+
+---
+
+## 6. Tolerance Policy
+
+| Quantity | Recommended tolerance | Rationale |
+|----------|-----------------------|-----------|
+| OLS coefficients (well-conditioned) | atol = 1e-6 | Double precision arithmetic |
+| OLS coefficients (textbook) | atol = 1e-3 | Published tables rounded |
+| Standard errors | atol = 1e-4 | Sensitive to finite-sample corrections |
+| R² | atol = 1e-6 | Scalar, very stable |
+| t-statistics | atol = 1e-3 | Ratio of rounded quantities |
+| F-statistics | atol = 0.01 | Asymptotic; degrees-of-freedom sensitive |
+| p-values | atol = 0.01 | Check ordering, not exact value |
+| HAC/cluster SEs | rtol = 0.01 | Bandwidth choice creates variation |
+| IV coefficients | atol = 0.01 | Two-step estimation accumulates error |
+| Probit coefficients | atol = 0.005 | Iterative MLE; convergence tolerance matters |
+| NIST certified (numerical precision tests) | atol = 1e-6 to 1e-8 | Purpose-built precision test |
+
+For p-values, prefer structural assertions (`p < 0.05` or `p > 0.10`) over exact matching, since p-values are not numerically stable across implementations.
+
+---
+
+## 7. Running the Suite
+
+```bash
+# Full validation suite (requires data lake)
+python -m pytest tests/validation/ -v
+
+# Numerical precision only (no data files required)
+python -m pytest tests/validation/test_nist_ols.py tests/validation/test_montecarlo.py -v
+
+# Exclude Phase 3 stubs
+python -m pytest tests/validation/ -v -m "not phase3"
+
+# Single test group
+python -m pytest tests/validation/test_iv_wooldridge.py -v -k "mroz"
+
+# Show which tests were skipped (missing data)
+python -m pytest tests/validation/ -v --tb=no -q 2>&1 | grep SKIP
+```
+
+---
+
+## 8. Implementation Priority
+
+Phase A — implement immediately (no new estimators needed):
+
+1. `test_nist_ols.py` — Norris, Longley, Wampler1 (embed data inline)
+2. Complete `test_ols_wooldridge.py` — bwght, gpa1 VIF, hprice1 RESET
+3. `test_se_types.py` — HC0–HC3 parity, Newey-West
+4. `test_diagnostics_wooldridge.py` — BP, White, RESET, JB, DW
+
+Phase B — requires panel estimators (already implemented):
+
+5. `test_panel_wooldridge.py` — wagepan FE/RE, Hausman, jtrain FD
+6. `test_iv_wooldridge.py` — complete mroz suite, Card IV, Sargan
+
+Phase C — hardcode R cross-checks:
+
+7. `test_r_parity.py` — Newey-West parity, ivreg parity
+
+Phase D — Phase 3 feature flag:
+
+8. `test_binary_models.py` — Probit mroz, marginal effects
+9. `test_montecarlo.py` — bootstrap SE coverage
+
+---
+
+## 9. Suggested Additions Beyond Wooldridge
+
+These are good validation targets not currently in the Wooldridge dataset collection:
+
+**Angrist & Pischke (2009) "Mostly Harmless Econometrics" replication data** — excellent for IV and differences-in-differences benchmarks. Many replication packages available on the authors' website.
+
+**AER R package** — contains Card (1995), Mroz (1987), and ~100 other classic datasets with published results, all accessible via `data()` in R. Cross-check against these for IV and panel.
+
+**linearmodels' own test fixtures** — `bashtage/linearmodels/linearmodels/tests/` contains hardcoded expected values for IV-GMM, between effects, and asset pricing factors. Mine these for additional IV and panel reference values.
+
+**Phillips curve example** — any standard macroeconometrics textbook gives an inflation-unemployment regression with known DW statistics and serial correlation diagnostics. Use Wooldridge's `phillips.dta`.
+
+**Consumption function (Greene, Chapter 5)** — a classic numerical example with published coefficient values, used widely to validate OLS and GLS implementations. Greene datasets are available via the `Ecdat` R package.

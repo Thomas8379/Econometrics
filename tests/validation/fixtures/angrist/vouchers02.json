@@ -1,0 +1,65 @@
+{
+  "paper": "Angrist et al. (2002)",
+  "source_doi": "doi:10.7910/DVN/K57TOZ",
+  "source_code": "table2_final.sas + table3_final.sas",
+  "generator": "scripts/r/vouchers02_fixtures.R",
+  "r_version": "4.5.1",
+  "se_type": "HC0 (matches SAS proc reg /acov)",
+  "survey_sample_n": 1618,
+  "panel_c": {
+    "phone": {
+      "coef": 0.01968796,
+      "se": 0.00787916,
+      "nobs": 1618
+    },
+    "scyfnsh": {
+      "coef": 0.10234292,
+      "se": 0.0442008,
+      "nobs": 1618
+    },
+    "prscha_1": {
+      "coef": 0.06465108,
+      "se": 0.01579579,
+      "nobs": 1600
+    },
+    "prscha_2": {
+      "coef": 0.17034971,
+      "se": 0.02130115,
+      "nobs": 1600
+    },
+    "totscyrs": {
+      "coef": 0.06023906,
+      "se": 0.04721466,
+      "nobs": 1610
+    },
+    "inschl": {
+      "coef": 0.01115651,
+      "se": 0.01734552,
+      "nobs": 1607
+    },
+    "usngsch": {
+      "coef": 0.52371073,
+      "se": 0.01882909,
+      "nobs": 1610
+    }
+  },
+  "application_sample": {
+    "phone": {
+      "coef": 0.01656814,
+      "se": 0.00991613,
+      "nobs": 5732
+    },
+    "age2": {
+      "coef": -0.13256478,
+      "se": 0.03986,
+      "nobs": 5732
+    },
+    "sex_name": {
+      "coef": 0.01929663,
+      "se": 0.01516142,
+      "nobs": 4447
+    }
+  },
+  "generated_at": "2026-03-04T15:51:58+00:00",
+  "generated_by": "scripts/generate_fixtures.py"
+}

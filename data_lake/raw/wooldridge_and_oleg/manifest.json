@@ -1,0 +1,572 @@
+[
+  {
+    "standardised_name": "401k.dta",
+    "original_name": "401K.DTA",
+    "source": "wooldridge",
+    "sha256": "3ef71e05ce64e49c79573ab267c20ce36e9c6a120674221dd024aac8a729d3b6"
+  },
+  {
+    "standardised_name": "401ksubs.dta",
+    "original_name": "401ksubs.dta",
+    "source": "wooldridge",
+    "sha256": "24feab4d7d7b0ffd114cb1c120228b75a5c29d88fd458ef141e657e6ae77ed22"
+  },
+  {
+    "standardised_name": "admnrev.dta",
+    "original_name": "ADMNREV.DTA",
+    "source": "wooldridge",
+    "sha256": "87340aa82c4b64b6cb97b9d26d4432e8e8b65b23ee8d31ae2c2b61291465ee19"
+  },
+  {
+    "standardised_name": "affairs.dta",
+    "original_name": "affairs.dta",
+    "source": "wooldridge",
+    "sha256": "ab050e7229dc1fb8c46ef9769313bed035b2ba04d0804df74f7862642941f41d"
+  },
+  {
+    "standardised_name": "airfare.dta",
+    "original_name": "airfare.dta",
+    "source": "wooldridge",
+    "sha256": "acc433f118e07be5d8839f53371a8b792cd2e1e613c8d04f6dc86f776e6758e9"
+  },
+  {
+    "standardised_name": "apple.dta",
+    "original_name": "APPLE.DTA",
+    "source": "wooldridge",
+    "sha256": "09b52a8f352383ff3b86e1d7d5fe97b094f57ae6e0059f2a4020f587a1883497"
+  },
+  {
+    "standardised_name": "athlet1.dta",
+    "original_name": "ATHLET1.DTA",
+    "source": "wooldridge",
+    "sha256": "f6445a1a3ec4dc4c25431ebd3f6dec6a37ed10e0ec4b2ae89f85d82d17d5a146"
+  },
+  {
+    "standardised_name": "athlet2.dta",
+    "original_name": "ATHLET2.DTA",
+    "source": "wooldridge",
+    "sha256": "8fe493da0fbe9fa28b6a00a568c795a6310504e563389804c4f3188feb0eb035"
+  },
+  {
+    "standardised_name": "attend.dta",
+    "original_name": "attend.dta",
+    "source": "wooldridge",
+    "sha256": "8854789529952c79df7d1e5a89400b52e5451404c427da7291c7eec440e0ba2b"
+  },
+  {
+    "standardised_name": "audit.dta",
+    "original_name": "AUDIT.DTA",
+    "source": "wooldridge",
+    "sha256": "4313dc2515f58ae48cb479ff9d60757fc2df8edd1746855656040565e6088ba2"
+  },
+  {
+    "standardised_name": "barium.dta",
+    "original_name": "BARIUM.DTA",
+    "source": "wooldridge",
+    "sha256": "4bc602916b324d9e93a8546ab31ff9844009dbe728a117142bc3e832d75b3af9"
+  },
+  {
+    "standardised_name": "beauty.dta",
+    "original_name": "beauty.dta",
+    "source": "wooldridge",
+    "sha256": "31893d501b5a9c047ce6d463e51732545de5c8d9ce824032a6f749aa9d3976ab"
+  },
+  {
+    "standardised_name": "boat_race.dta",
+    "original_name": "BoatRace.dta",
+    "source": "local",
+    "sha256": "8d63fa4d790a0e949685f67eb504418d542dd8907c28c5d38664be694dade8eb"
+  },
+  {
+    "standardised_name": "bwght.dta",
+    "original_name": "BWGHT.DTA",
+    "source": "wooldridge",
+    "sha256": "d5b3fd380ccfe6eee0ce71b3f04aa5daf976969d18943b32c3f624dda5a37a8d"
+  },
+  {
+    "standardised_name": "bwght2.dta",
+    "original_name": "bwght2.dta",
+    "source": "wooldridge",
+    "sha256": "50fc2d63e52d8b9dad9025647b68a0a266d7199660e09911998ef07bc1833f02"
+  },
+  {
+    "standardised_name": "campus.dta",
+    "original_name": "campus.dta",
+    "source": "wooldridge",
+    "sha256": "f9119393cd151e4e76dfed6cbf3563d34ce39619d5ec57a80991e990b2d6ea33"
+  },
+  {
+    "standardised_name": "card.dta",
+    "original_name": "CARD.DTA",
+    "source": "wooldridge",
+    "sha256": "c611a43c727786abc8dd6974cc4e8e0ae39e876aa0279a3dd2b61dab45736352"
+  },
+  {
+    "standardised_name": "cement.dta",
+    "original_name": "cement.dta",
+    "source": "wooldridge",
+    "sha256": "270587fc831ab4e9e41638b94b2acbbfb2e4a1e2153466cfb8224e87d0427f24"
+  },
+  {
+    "standardised_name": "ceosal1.dta",
+    "original_name": "CEOSAL1.DTA",
+    "source": "wooldridge",
+    "sha256": "fbd0c29c9ef7659ee0e19dd44fcb5181ee747c2fa8272cb91fd3b2ab97b262d6"
+  },
+  {
+    "standardised_name": "ceosal2.dta",
+    "original_name": "CEOSAL2.DTA",
+    "source": "wooldridge",
+    "sha256": "e5986b99b4e94ffaae9e63d2f1f2fc733ad6af6e724342b1587de13a77a01fc7"
+  },
+  {
+    "standardised_name": "consump.dta",
+    "original_name": "consump.dta",
+    "source": "wooldridge",
+    "sha256": "401e93888e0eeef7b1eba090b28aaef2fadf2c60bb803270cd94c6388fee04e3"
+  },
+  {
+    "standardised_name": "corn.dta",
+    "original_name": "CORN.DTA",
+    "source": "wooldridge",
+    "sha256": "6cf71ccf7fa67418aa3977b553b725b0ec2463739ab051dfd36f5a6e063dba72"
+  },
+  {
+    "standardised_name": "cps78_85.dta",
+    "original_name": "CPS78_85.DTA",
+    "source": "wooldridge",
+    "sha256": "b4ed45bb310217d66484b0cf2fd70b12efe9120e9a0eca66ff14a356faeaf058"
+  },
+  {
+    "standardised_name": "cps91.dta",
+    "original_name": "cps91.dta",
+    "source": "wooldridge",
+    "sha256": "44ba051462acfab2252d50268a25382f731f70513a3cddf1dbcad7b108dde711"
+  },
+  {
+    "standardised_name": "crime1.dta",
+    "original_name": "CRIME1.DTA",
+    "source": "wooldridge",
+    "sha256": "497639450a986c4bad4004dc142cb229d6825ec621154a337e4cb046bfbf78c8"
+  },
+  {
+    "standardised_name": "crime2.dta",
+    "original_name": "CRIME2.DTA",
+    "source": "wooldridge",
+    "sha256": "6c577cd4d950eb4db412d643d7bc64ff1a00056480b4e4c1686aecb9e571eda9"
+  },
+  {
+    "standardised_name": "crime3.dta",
+    "original_name": "CRIME3.DTA",
+    "source": "wooldridge",
+    "sha256": "2ec50208ed4450ab89c5aefe96f1bf48e95994df8162391f48fab1d725a4ed2b"
+  },
+  {
+    "standardised_name": "crime4.dta",
+    "original_name": "CRIME4.DTA",
+    "source": "wooldridge",
+    "sha256": "32b491ddbfd56844752fe14b14c0583816b617770d0db3852ca94d9d87885b82"
+  },
+  {
+    "standardised_name": "discrim.dta",
+    "original_name": "discrim.dta",
+    "source": "wooldridge",
+    "sha256": "572cd5dbcd4ce839526ce09cb1c6be157b18fa579ccf74a70902c16d48aee362"
+  },
+  {
+    "standardised_name": "earns.dta",
+    "original_name": "EARNS.DTA",
+    "source": "wooldridge",
+    "sha256": "f98e7df6c20f06dfa3bbbad884f5ec99e2529520198668c64f96f3e23cbde7b3"
+  },
+  {
+    "standardised_name": "engin.dta",
+    "original_name": "engin.dta",
+    "source": "wooldridge",
+    "sha256": "2eac86333823bdf30b129d29071840a0a9d5f049ee81998f56081315bfb26050"
+  },
+  {
+    "standardised_name": "ezanders.dta",
+    "original_name": "EZANDERS.DTA",
+    "source": "wooldridge",
+    "sha256": "9762352301f33ad6baf8c0cf86a97e3b249d86d5e3c207120155402457d14b24"
+  },
+  {
+    "standardised_name": "ezunem.dta",
+    "original_name": "ezunem.dta",
+    "source": "wooldridge",
+    "sha256": "88c8c3df88ce2982b535d1b6896d58f21f2098cf3c2361174fde98865e32a7a8"
+  },
+  {
+    "standardised_name": "fair.dta",
+    "original_name": "FAIR.DTA",
+    "source": "wooldridge",
+    "sha256": "b0853fc0b0b95ee096e21b5d7b2575be02b3efeacdfccd7c66a3ec927704d305"
+  },
+  {
+    "standardised_name": "fatkids_db692.dta",
+    "original_name": "04_lent_Data - fatkids_db692.dta",
+    "source": "local",
+    "sha256": "e4ee4c9aa609be5ba76a336d19ca8af3c96fc091ef4e7bd88ff74521b1fbdd1a"
+  },
+  {
+    "standardised_name": "fertil1.dta",
+    "original_name": "FERTIL1.DTA",
+    "source": "wooldridge",
+    "sha256": "d29a252eab6ad4a7fb5c36b4dcf316d3b83569f8a8a48fda5fcc117ea5a47ec5"
+  },
+  {
+    "standardised_name": "fertil2.dta",
+    "original_name": "FERTIL2.DTA",
+    "source": "wooldridge",
+    "sha256": "05207e250389ad1db3d57ecde8d3ba6b3cb2da1a415d2330661deb71e60d02d6"
+  },
+  {
+    "standardised_name": "fertil3.dta",
+    "original_name": "FERTIL3.DTA",
+    "source": "wooldridge",
+    "sha256": "d3d1f57aa028146e8ff550bba432d0a50eb223de87dae1cb96928f96c2d2e31b"
+  },
+  {
+    "standardised_name": "fish.dta",
+    "original_name": "FISH.DTA",
+    "source": "wooldridge",
+    "sha256": "aeb9b4c54606adaf8e4d83fdb6c24a8e04b1f0e4765bf210be2594c0c0f2afab"
+  },
+  {
+    "standardised_name": "fringe.dta",
+    "original_name": "FRINGE.DTA",
+    "source": "wooldridge",
+    "sha256": "2f2ac2ab52f4f3b6f643fda6f7205e8bb8bc130597c8114a85db71fa31072016"
+  },
+  {
+    "standardised_name": "gpa1.dta",
+    "original_name": "GPA1.DTA",
+    "source": "wooldridge",
+    "sha256": "d8c89cbb245c70fb43b8838ca2ea0d163cc6e9e99567ef4070408c8f098a0c49"
+  },
+  {
+    "standardised_name": "gpa2.dta",
+    "original_name": "gpa2.dta",
+    "source": "wooldridge",
+    "sha256": "6ca9038ee460df5d0c9870bfa2da5fdae28744b680a70636b1ca874cc3642870"
+  },
+  {
+    "standardised_name": "gpa3.dta",
+    "original_name": "GPA3.DTA",
+    "source": "wooldridge",
+    "sha256": "519e0d2398e48e9a6e62587017699d2da3626e760b01003bbac7ad46e044b3ba"
+  },
+  {
+    "standardised_name": "hprice1.dta",
+    "original_name": "hprice1.dta",
+    "source": "wooldridge",
+    "sha256": "c1248c60fe12586835009515fca90c3a31399a5434ec61613ee2937afeca229e"
+  },
+  {
+    "standardised_name": "hprice2.dta",
+    "original_name": "HPRICE2.DTA",
+    "source": "wooldridge",
+    "sha256": "62f9444904502b0b81447bb3908455b2bca83fe23be6eeb4201ae9078dd6e2bb"
+  },
+  {
+    "standardised_name": "hprice3.dta",
+    "original_name": "HPRICE3.DTA",
+    "source": "wooldridge",
+    "sha256": "633d6049780366471967c5dff12f7ef1860a2a443e8f5f5d69c04f22e1dc6a73"
+  },
+  {
+    "standardised_name": "hseinv.dta",
+    "original_name": "HSEINV.DTA",
+    "source": "wooldridge",
+    "sha256": "0622600ec21ebfda9ea8f537992faac79a176052848bef8932d05bb321913a0f"
+  },
+  {
+    "standardised_name": "htv.dta",
+    "original_name": "HTV.DTA",
+    "source": "wooldridge",
+    "sha256": "10c819b9cab79a50072009db46a91ee59478adaf1c106f1a2cd1d98f84b25918"
+  },
+  {
+    "standardised_name": "infmrt.dta",
+    "original_name": "INFMRT.DTA",
+    "source": "wooldridge",
+    "sha256": "4de049d3282be753f38226011241ca797c28ae5c80ed7d95512aa81300d9ac0c"
+  },
+  {
+    "standardised_name": "injury.dta",
+    "original_name": "INJURY.DTA",
+    "source": "wooldridge",
+    "sha256": "9c6e27c43ff372e43d434b1d43f5be44c2f0db3d0e7dfbb6be1197005fd4f1b9"
+  },
+  {
+    "standardised_name": "intdef.dta",
+    "original_name": "intdef.dta",
+    "source": "wooldridge",
+    "sha256": "8bb8ad7c61185178ee4f491e20b417b824ddd99d47e65bf1cefd29214067f127"
+  },
+  {
+    "standardised_name": "intqrt.dta",
+    "original_name": "INTQRT.DTA",
+    "source": "wooldridge",
+    "sha256": "2767500385640eb611f7d2bd57072d64366d4dcbd0d9fa98aeaa65fbf0428fa4"
+  },
+  {
+    "standardised_name": "inven.dta",
+    "original_name": "INVEN.DTA",
+    "source": "wooldridge",
+    "sha256": "c2f805165319a8b78b7f6b6a089c1b5f014aad7513b6aedc00d173ec09e9fd5a"
+  },
+  {
+    "standardised_name": "jtrain.dta",
+    "original_name": "JTRAIN.DTA",
+    "source": "wooldridge",
+    "sha256": "5de798817ca2b87dc14722873e1978efbcf260b31a6a4371e41555fd28903df4"
+  },
+  {
+    "standardised_name": "jtrain2.dta",
+    "original_name": "JTRAIN2.DTA",
+    "source": "wooldridge",
+    "sha256": "26f40c2636cc5faa5a37c2bd1b4a0d6a29e0635ad6554a2ddb3bf299da22ca86"
+  },
+  {
+    "standardised_name": "jtrain3.dta",
+    "original_name": "jtrain3.dta",
+    "source": "wooldridge",
+    "sha256": "ef5605c3cf9a44d1f318884d6d075018f54c1356fa05718fc1d781d78496d955"
+  },
+  {
+    "standardised_name": "kielmc.dta",
+    "original_name": "KIELMC.DTA",
+    "source": "wooldridge",
+    "sha256": "25f2c16602c662b7a61b58063884c705aaf1bb1df3c7aebd61c2248a5e956bf6"
+  },
+  {
+    "standardised_name": "lawsch85.dta",
+    "original_name": "LAWSCH85.DTA",
+    "source": "wooldridge",
+    "sha256": "1e1f3610cd696b25318847455a11e92058e03d97733bb5d6db144a86be3ff605"
+  },
+  {
+    "standardised_name": "loanapp.dta",
+    "original_name": "loanapp.dta",
+    "source": "wooldridge",
+    "sha256": "0bfb49724540fd0d121fbc5e3974ac0986fb7a90acbddb06f1671daabfd9773c"
+  },
+  {
+    "standardised_name": "lowbrth.dta",
+    "original_name": "LOWBRTH.DTA",
+    "source": "wooldridge",
+    "sha256": "138e09e9093a089600506c76797d721f1364c1bc9b7e9442e15bfd51c10fdbd8"
+  },
+  {
+    "standardised_name": "mathpnl.dta",
+    "original_name": "mathpnl.dta",
+    "source": "wooldridge",
+    "sha256": "4125a90389ef2afc86eeea27c985c89ab575cedefec825184d1e3768acd4e51d"
+  },
+  {
+    "standardised_name": "meap01.dta",
+    "original_name": "meap01.dta",
+    "source": "wooldridge",
+    "sha256": "9aab33d88e30f85629d347abfda42cfaaf9f131d2e98011bc14f98d61e2884d1"
+  },
+  {
+    "standardised_name": "meap93.dta",
+    "original_name": "MEAP93.DTA",
+    "source": "wooldridge",
+    "sha256": "ce11260f4c662893efbf90f0d4713b28bfac6425fcd95defb8e33564e27f36f4"
+  },
+  {
+    "standardised_name": "mlb1.dta",
+    "original_name": "MLB1.DTA",
+    "source": "wooldridge",
+    "sha256": "9aa3648ca43e747d7112ef3e76514f749c63d9e29db5874ec5777db1be05af89"
+  },
+  {
+    "standardised_name": "mroz.dta",
+    "original_name": "MROZ.DTA",
+    "source": "wooldridge",
+    "sha256": "ab8298d4f7b178f9bf9ab592fc98df72a22d6c9f8aedb4282822ccdc38a626ad"
+  },
+  {
+    "standardised_name": "murder.dta",
+    "original_name": "MURDER.DTA",
+    "source": "wooldridge",
+    "sha256": "e87b6c77720085643cb45f6bd09d670b0f285156d154a4049d188379b857298d"
+  },
+  {
+    "standardised_name": "nbasal.dta",
+    "original_name": "nbasal.dta",
+    "source": "wooldridge",
+    "sha256": "8ccb689b98901f3afe7c0da8d71f61e78e2af32f28661bedd34892f5ccb2a2a6"
+  },
+  {
+    "standardised_name": "nyse.dta",
+    "original_name": "NYSE.DTA",
+    "source": "wooldridge",
+    "sha256": "8d9104814d9b4950ba59d0198e3cb50f8ce470111a285b40ab85b104d3140e64"
+  },
+  {
+    "standardised_name": "openness.dta",
+    "original_name": "OPENNESS.DTA",
+    "source": "wooldridge",
+    "sha256": "63a43373fdbaba4d1529328a215e7c4a664da9d21b186b9b8b435751f2b3fea4"
+  },
+  {
+    "standardised_name": "pension.dta",
+    "original_name": "PENSION.DTA",
+    "source": "wooldridge",
+    "sha256": "713a6594a801468d8fb7cc5165e77d04d84ec4133ce2bf65b1c89af658f82e99"
+  },
+  {
+    "standardised_name": "phillips.dta",
+    "original_name": "phillips.dta",
+    "source": "wooldridge",
+    "sha256": "491e9361cb4565a2ea5a2dd5a0c3d283a87fafc02d939e86f00ad791bcea857f"
+  },
+  {
+    "standardised_name": "pntsprd.dta",
+    "original_name": "PNTSPRD.DTA",
+    "source": "wooldridge",
+    "sha256": "fe4272b97264d6cecacde3b9cc31d8084d583f42b08f6a7250a0d4be2bd30f09"
+  },
+  {
+    "standardised_name": "prison.dta",
+    "original_name": "PRISON.DTA",
+    "source": "wooldridge",
+    "sha256": "c070c804a5a88a76f49e424634aa92e677666baabe2d1218eeb140baac38c384"
+  },
+  {
+    "standardised_name": "prminwge.dta",
+    "original_name": "PRMINWGE.DTA",
+    "source": "wooldridge",
+    "sha256": "f96f5c134c164d7b9cab7ac5e1dea63878e701050ef45ba493abcba2ef945e2f"
+  },
+  {
+    "standardised_name": "rdchem.dta",
+    "original_name": "RDCHEM.DTA",
+    "source": "wooldridge",
+    "sha256": "261b9bedcf94a9de7ca9221628da7dba597079df33f30ae90e2c6889aaddc837"
+  },
+  {
+    "standardised_name": "rdtelec.dta",
+    "original_name": "rdtelec.dta",
+    "source": "wooldridge",
+    "sha256": "18cb972a3f3129902de0e7b1213176af010c33c7a3634a22663db9543e004e22"
+  },
+  {
+    "standardised_name": "recid.dta",
+    "original_name": "RECID.DTA",
+    "source": "wooldridge",
+    "sha256": "003bb6dd1575bac59928dda34ca5d91a2a2e619eb23a1625ca59fecaa1440774"
+  },
+  {
+    "standardised_name": "rental.dta",
+    "original_name": "RENTAL.DTA",
+    "source": "wooldridge",
+    "sha256": "e885cdc9695e544a70405cd84a90e12eeccbe28cdd6e63eaa83fa92bc11d1e0b"
+  },
+  {
+    "standardised_name": "return.dta",
+    "original_name": "RETURN.DTA",
+    "source": "wooldridge",
+    "sha256": "ffc964e3af1de3fb886555ad2511c7fa6271937544592355373229bfbe0948ba"
+  },
+  {
+    "standardised_name": "saving.dta",
+    "original_name": "SAVING.DTA",
+    "source": "wooldridge",
+    "sha256": "5aa523f651ddef7991f75f33ca04997ac22465070bddb863814cf8db38627de1"
+  },
+  {
+    "standardised_name": "sleep75.dta",
+    "original_name": "SLEEP75.DTA",
+    "source": "wooldridge",
+    "sha256": "3499c3e7ccb6742a9aeed6b1c4c3fa6f08da255897a61a37a7c93f873f2a79b7"
+  },
+  {
+    "standardised_name": "slp75_81.dta",
+    "original_name": "SLP75_81.DTA",
+    "source": "wooldridge",
+    "sha256": "da015d71a1f24d343450dd8c1a3c17d1830286f3b57cd494a19b13a37919ed09"
+  },
+  {
+    "standardised_name": "smoke.dta",
+    "original_name": "SMOKE.DTA",
+    "source": "wooldridge",
+    "sha256": "851388ebe1f46373a368108da686c53d783b92e5cd93cc575b9d34284538f7b5"
+  },
+  {
+    "standardised_name": "traffic1.dta",
+    "original_name": "TRAFFIC1.DTA",
+    "source": "wooldridge",
+    "sha256": "f189e8d09d5f9b373130100a22edd4e2b90dbc82f7dbf23e4c3b67f21ab58ad0"
+  },
+  {
+    "standardised_name": "traffic2.dta",
+    "original_name": "TRAFFIC2.DTA",
+    "source": "wooldridge",
+    "sha256": "194d8ebc3c0c4fff770c3be2cc091db13dcacfa3e9a85b59f59547ef96ee1e7f"
+  },
+  {
+    "standardised_name": "twoyear.dta",
+    "original_name": "twoyear.dta",
+    "source": "wooldridge",
+    "sha256": "523a17c824ef94240adeb908391672111668579e81059c4f52e353438704056c"
+  },
+  {
+    "standardised_name": "volat.dta",
+    "original_name": "VOLAT.DTA",
+    "source": "wooldridge",
+    "sha256": "26bdd52e49b4f5f96699fa29ba5175fbcd628a6e98e557ec463eccff1f7ae939"
+  },
+  {
+    "standardised_name": "vote1.dta",
+    "original_name": "VOTE1.DTA",
+    "source": "wooldridge",
+    "sha256": "49cf2c5fb2f6431b8836fc567e4b401aa3c3abea8fa77dc934153bf40dda03b2"
+  },
+  {
+    "standardised_name": "vote2.dta",
+    "original_name": "VOTE2.DTA",
+    "source": "wooldridge",
+    "sha256": "c3c39c258e06a423d3072b31b813ba343cf2d8d8de568839558e0c1046b70080"
+  },
+  {
+    "standardised_name": "wage1.dta",
+    "original_name": "WAGE1.DTA",
+    "source": "wooldridge",
+    "sha256": "2a21e8971cc071b5215dcc0b0fde901f7c31a6b4d1a3625a83bebb44e5f1b1bc"
+  },
+  {
+    "standardised_name": "wage2.dta",
+    "original_name": "WAGE2.DTA",
+    "source": "wooldridge",
+    "sha256": "942be89e4c448b0fe650aaec24dee387c36a541f8c20810fde44eb949e68debb"
+  },
+  {
+    "standardised_name": "wagepan.dta",
+    "original_name": "WAGEPAN.DTA",
+    "source": "wooldridge",
+    "sha256": "0ae40d70055bebdf1399b8fb5d9fb793392153e0b444cb3e9d7da9f93d7c84c6"
+  },
+  {
+    "standardised_name": "wageprc.dta",
+    "original_name": "WAGEPRC.DTA",
+    "source": "wooldridge",
+    "sha256": "b74e684ff47d85381395b3fe808aa04fbe06dadda9af0df1f1f98406a7a6cf98"
+  },
+  {
+    "standardised_name": "wheat_india.dta",
+    "original_name": "wheatIndia.dta",
+    "source": "local",
+    "sha256": "6fb27f891eab654ab6f4ab1f6504d3706441ec12be9954136ee517328e8f9718"
+  },
+  {
+    "standardised_name": "wine.dta",
+    "original_name": "wine.dta",
+    "source": "wooldridge",
+    "sha256": "7b4d6f8313e7da335d6399662dd42fee0989f7b9761aad1b7c236b399ab2aa58"
+  }
+]

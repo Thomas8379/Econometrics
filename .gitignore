@@ -39,3 +39,6 @@ data_lake/raw/*/**
 data_lake/curated/**
 # Exception: keep directory placeholder in version control
 !data_lake/curated/.gitkeep
+
+# Quarantine — large zip archives exceed GitHub's 100 MB limit
+Quarantine/Angrist/*.zip

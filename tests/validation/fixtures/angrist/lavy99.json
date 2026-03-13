@@ -1,0 +1,96 @@
+{
+  "paper": "Angrist & Lavy (1999)",
+  "source_doi": "doi:10.7910/DVN/XRSUJU",
+  "source_code": "AngristLavy_Table4.do",
+  "generator": "scripts/r/lavy99_fixtures.R",
+  "r_version": "4.5.1",
+  "aer_version": "1.2.15",
+  "grade5": {
+    "nobs_verbal": 2019,
+    "nobs_math": 2018,
+    "ols": {
+      "verbal_no_controls": {
+        "coef": 0.22101259,
+        "se": 0.03352944,
+        "nobs": 2019
+      },
+      "verbal_tipuach": {
+        "coef": -0.03138794,
+        "se": 0.02617701,
+        "nobs": 2019
+      },
+      "verbal_tipuach_csize": {
+        "coef": -0.0251977,
+        "se": 0.03290304,
+        "nobs": 2019
+      }
+    },
+    "iv": {
+      "verbal_tipuach": {
+        "coef": -0.1584777,
+        "se": 0.04164643,
+        "nobs": 2019
+      },
+      "verbal_tipuach_csize": {
+        "coef": -0.27701976,
+        "se": 0.07588656,
+        "nobs": 2019
+      },
+      "math_tipuach": {
+        "coef": -0.01304648,
+        "se": 0.05769785,
+        "nobs": 2018
+      },
+      "math_tipuach_csize": {
+        "coef": -0.23114826,
+        "se": 0.09852959,
+        "nobs": 2018
+      }
+    }
+  },
+  "grade4": {
+    "nobs_verbal": 2049,
+    "nobs_math": 2049,
+    "ols": {
+      "verbal_no_controls": {
+        "coef": 0.1414599,
+        "se": 0.03474964,
+        "nobs": 2049
+      },
+      "verbal_tipuach": {
+        "coef": -0.0529833,
+        "se": 0.02763542,
+        "nobs": 2049
+      },
+      "verbal_tipuach_csize": {
+        "coef": -0.0404513,
+        "se": 0.03203086,
+        "nobs": 2049
+      }
+    },
+    "iv": {
+      "verbal_tipuach": {
+        "coef": -0.1100297,
+        "se": 0.0404328,
+        "nobs": 2049
+      },
+      "verbal_tipuach_csize": {
+        "coef": -0.13286938,
+        "se": 0.06087881,
+        "nobs": 2049
+      },
+      "math_tipuach": {
+        "coef": 0.04873103,
+        "se": 0.05204047,
+        "nobs": 2049
+      },
+      "math_tipuach_csize": {
+        "coef": -0.04969503,
+        "se": 0.07472211,
+        "nobs": 2049
+      }
+    }
+  },
+  "generated_at": "2026-03-04T15:51:57+00:00",
+  "generated_by": "scripts/generate_fixtures.py"
+}

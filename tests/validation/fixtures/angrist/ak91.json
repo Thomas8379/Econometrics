@@ -1,0 +1,29 @@
+{
+  "paper": "Angrist & Krueger (1991)",
+  "source_doi": "doi:10.7910/DVN/ENLGZX",
+  "source_code": "ak91.sas",
+  "generator": "scripts/r/ak91_fixtures.R",
+  "r_version": "4.5.1",
+  "aer_version": "1.2.15",
+  "ols": {
+    "spec": "lwklywge ~ yr21-yr29 + educ",
+    "educ_coef": 0.07108105,
+    "educ_se": 0.00033901,
+    "nobs": 329509,
+    "r_squared": 0.11774506
+  },
+  "iv30": {
+    "spec": "lwklywge ~ yr21-yr29 + educ | yr21-yr29 + QTR{2,3,4}xYR{20-29} (30 instruments)",
+    "educ_coef": 0.08911546,
+    "educ_se": 0.01611009,
+    "nobs": 329509
+  },
+  "iv3": {
+    "spec": "lwklywge ~ yr21-yr29 + educ | yr21-yr29 + qtr1 + qtr2 + qtr3 (3 instruments)",
+    "educ_coef": 0.10525238,
+    "educ_se": 0.0200834,
+    "nobs": 329509
+  },
+  "generated_at": "2026-03-04T15:51:56+00:00",
+  "generated_by": "scripts/generate_fixtures.py"
+}

@@ -13,6 +13,7 @@ from __future__ import annotations
 from typing import Iterable, Sequence
 
 import numpy as np
+import pandas as pd
 import scipy.stats
 from statsmodels.stats.diagnostic import acorr_ljungbox
 from statsmodels.tsa.stattools import acf as _acf
@@ -27,17 +28,23 @@ def box_pierce_q(result: RegressionResult, *, lags: int) -> TestResult:
     H0: no serial correlation up to lag m.
     """
     _validate_lags(lags)
-    lbq, _lb_p, bpq, bp_p = acorr_ljungbox(
-        result.resid, lags=[lags], boxpierce=True, return_df=False
-    )
+    out = acorr_ljungbox(result.resid, lags=[lags], boxpierce=True)
+    # acorr_ljungbox returns a DataFrame in recent statsmodels
+    if isinstance(out, pd.DataFrame):
+        bp_stat = float(out["bp_stat"].iloc[-1])
+        bp_pval = float(out["bp_pvalue"].iloc[-1])
+    else:
+        _lbq, _lb_p, bpq, bp_p = out
+        bp_stat = float(bpq[-1])
+        bp_pval = float(bp_p[-1])
     return TestResult(
         test_name="Box-Pierce Q",
-        statistic=float(bpq[-1]),
-        pvalue=float(bp_p[-1]),
+        statistic=bp_stat,
+        pvalue=bp_pval,
         df=float(lags),
         distribution="Chi2",
         null_hypothesis=f"No serial correlation up to lag {lags}",
-        reject=float(bp_p[-1]) < 0.05,
+        reject=bp_pval < 0.05,
     )
 
 
@@ -47,15 +54,22 @@ def ljung_box_q(result: RegressionResult, *, lags: int) -> TestResult:
     H0: no serial correlation up to lag m.
     """
     _validate_lags(lags)
-    lbq, lb_p = acorr_ljungbox(result.resid, lags=[lags], return_df=False)
+    out = acorr_ljungbox(result.resid, lags=[lags])
+    if isinstance(out, pd.DataFrame):
+        lb_stat = float(out["lb_stat"].iloc[-1])
+        lb_pval = float(out["lb_pvalue"].iloc[-1])
+    else:
+        lbq, lb_p = out
+        lb_stat = float(lbq[-1])
+        lb_pval = float(lb_p[-1])
     return TestResult(
         test_name="Ljung-Box Q",
-        statistic=float(lbq[-1]),
-        pvalue=float(lb_p[-1]),
+        statistic=lb_stat,
+        pvalue=lb_pval,
         df=float(lags),
         distribution="Chi2",
         null_hypothesis=f"No serial correlation up to lag {lags}",
-        reject=float(lb_p[-1]) < 0.05,
+        reject=lb_pval < 0.05,
     )
 
 
